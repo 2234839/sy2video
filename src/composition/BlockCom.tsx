@@ -1,10 +1,10 @@
 import {IFrame, continueRender, delayRender} from 'remotion';
-import {siyuanBlockIframe} from '../siyuan';
-import {useState} from 'react';
 import {z} from 'zod';
+import {siyuanBlockIframe} from '../siyuan';
+import React from 'react';
 export const BlockCompositionSchema = z.object({
 	/** 延迟多少毫秒才开始渲染 */
-	delay: z.number().optional().default(5_000),
+	delay: z.number().optional().default(4_000),
 	blockId: z.string(),
 });
 
@@ -12,9 +12,12 @@ export const BlockCompositionSchema = z.object({
 export const BlockComposition: React.FC<
 	z.infer<typeof BlockCompositionSchema>
 > = (props) => {
-	const [handle] = useState(() => delayRender());
+	const [handle] = React.useState(() => delayRender());
 	setTimeout(() => {
 		continueRender(handle);
 	}, props.delay);
-	return <IFrame src={siyuanBlockIframe(props.blockId)} className="w-full h-full" />;
+
+	return (
+		<IFrame src={siyuanBlockIframe(props.blockId)} className="w-full h-full" />
+	);
 };

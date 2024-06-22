@@ -11,6 +11,8 @@ import {z} from 'zod';
 import {siyuanAsset} from './siyuan';
 import {CoveComposition} from './composition/cover';
 import {BlockComposition} from './composition/BlockCom';
+import {linearTiming, TransitionSeries} from '@remotion/transitions';
+import {slide} from '@remotion/transitions/slide';
 export const myCompSchema = z.object({});
 
 export const testComposition: React.FC<z.infer<typeof myCompSchema>> = ({}) => {
@@ -34,16 +36,22 @@ export const testComposition: React.FC<z.infer<typeof myCompSchema>> = ({}) => {
 			<AbsoluteFill className="bg-slate-50">
 				<div></div>
 			</AbsoluteFill>
-			<CoveComposition />
-			<Series>
-				{/* 封面动画播放时间 */}
-				<Series.Sequence durationInFrames={fps * 1}>
-					<div></div>
-				</Series.Sequence>
-				<Series.Sequence durationInFrames={fps * 2}>
-					<BlockComposition blockId='20240622103850-90v98k8' delay={0}/>
-				</Series.Sequence>
-				<Series.Sequence durationInFrames={fps * 7}>
+			<TransitionSeries>
+				<TransitionSeries.Sequence durationInFrames={fps * 1}>
+					<CoveComposition />
+				</TransitionSeries.Sequence>
+				<TransitionSeries.Transition
+					presentation={slide({direction: 'from-right'})}
+					timing={linearTiming({durationInFrames: fps/2})}
+				/>
+				<TransitionSeries.Sequence durationInFrames={fps * 4}>
+					<BlockComposition blockId="20240622103850-90v98k8" delay={6_000} />
+				</TransitionSeries.Sequence>
+				<TransitionSeries.Transition
+					presentation={slide({direction: 'from-right'})}
+					timing={linearTiming({durationInFrames: fps})}
+				/>
+				<TransitionSeries.Sequence durationInFrames={fps * 7}>
 					<AbsoluteFill className="bg-gray-100 items-center justify-center">
 						<Audio src={music} startFrom={60} />
 						<AbsoluteFill style={{zIndex: 1}}>
@@ -67,8 +75,8 @@ export const testComposition: React.FC<z.infer<typeof myCompSchema>> = ({}) => {
 							/>
 						</AbsoluteFill>
 					</AbsoluteFill>
-				</Series.Sequence>
-			</Series>
+				</TransitionSeries.Sequence>
+			</TransitionSeries>
 		</AbsoluteFill>
 	);
 };

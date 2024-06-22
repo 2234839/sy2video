@@ -8,7 +8,7 @@ export const RemotionRoot: React.FC = () => {
 	const fps = 24;
 	const width = 1920;
 	const height = 1080;
-	const defaultTime = fps * 6;
+	const defaultTime = fps * 5;
 	return (
 		<>
 			<Folder name="Compositions">
@@ -22,29 +22,15 @@ export const RemotionRoot: React.FC = () => {
 					schema={BlockCompositionSchema}
 					defaultProps={{
 						blockId: '20240622103850-90v98k8',
-						delay: 1_000,
+						delay: 2_000,
 					}}
 				/>
 			</Folder>
 
 			<Composition
-				id="test"
-				component={testComposition}
-				durationInFrames={defaultTime}
-				fps={fps}
-				width={width}
-				height={height}
-				schema={myCompSchema}
-				defaultProps={{
-					titleText: 'Welcome to Remotion with Tailwind CSS',
-					titleColor: '#000000',
-					logoColor: '#00bfff',
-				}}
-			/>
-			<Composition
 				id="1080p"
 				component={testComposition}
-				durationInFrames={defaultTime}
+				durationInFrames={fps*7}
 				fps={fps}
 				width={1920}
 				height={1080}
