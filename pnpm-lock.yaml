@@ -14,9 +14,18 @@ importers:
       '@remotion/cli':
         specifier: 4.0.175
         version: 4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@remotion/media-utils':
+        specifier: ^4.0.175
+        version: 4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@remotion/transitions':
+        specifier: ^4.0.175
+        version: 4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@remotion/zod-types':
         specifier: 4.0.175
         version: 4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.22.3)
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
       react:
         specifier: ^18.0.0
         version: 18.3.1
@@ -36,6 +45,9 @@ importers:
       '@remotion/tailwind':
         specifier: 4.0.175
         version: 4.0.175(@remotion/bundler@4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.4.5)(webpack@5.83.1)
+      '@types/http-proxy':
+        specifier: ^1.17.14
+        version: 1.17.14
       '@types/react':
         specifier: ^18.0.26
         version: 18.3.3
@@ -45,6 +57,9 @@ importers:
       eslint:
         specifier: ^8.43.0
         version: 8.57.0
+      http-proxy:
+        specifier: ^1.18.1
+        version: 1.18.1
       prettier:
         specifier: ^3.2.5
         version: 3.3.2
@@ -547,6 +562,9 @@ packages:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
 
+  '@remotion/paths@4.0.175':
+    resolution: {integrity: sha512-1x5qfRBzE1v32PhhHTHZULw4H3cKZmsNisetZA6VYZyLQ7YW8yIGXEQDkzdqlcCycfrBnEFeFWXC1U7nwj7jFA==}
+
   '@remotion/player@4.0.175':
     resolution: {integrity: sha512-JrL+sTVgllEquIzEdlOSMxF8BCFGbj/vhU2rivTQavvM9w5FzBmOvSGWVZUCcqGdLZWk/OZUM/Pk1FHyTXp20A==}
     peerDependencies:
@@ -555,6 +573,12 @@ packages:
 
   '@remotion/renderer@4.0.175':
     resolution: {integrity: sha512-8P6UEYmmMg4RSheDBFmrc6/aVc03sRPoYJUzUt9ZqjJZU7lBjPEZsOSlVvBS47XSl0RNMCJEJjTaQWvIhO0Sww==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@remotion/shapes@4.0.175':
+    resolution: {integrity: sha512-Tej+SdgAssdkreGjC57dTiuiEx1hgDGeayr2kz2UEs+MLtSVp0WWv/JeNbqlKzqDQ7y66yCAnrwU6gGKo32CvA==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -573,6 +597,12 @@ packages:
     peerDependencies:
       '@remotion/bundler': 4.0.175
 
+  '@remotion/transitions@4.0.175':
+    resolution: {integrity: sha512-nu9/PJ2CQiW1bZU81VJ00afPn8lHWYIpKpXyXnn7JRZsyvIFAtjEFHHSwQ7XT1vieqGwSjjvqdZD3Q4ugsbkYQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
   '@remotion/zod-types@4.0.175':
     resolution: {integrity: sha512-SSZnzRzki+wUs7W/oPP6+jrBpGKQnogf9GpbivqcHbodc9FSPwuU/vOiOY9gC3pruhXG+LajTl1AJ1C2iky8dA==}
     peerDependencies:
@@ -586,6 +616,9 @@ packages:
 
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
+
+  '@types/http-proxy@1.17.14':
+    resolution: {integrity: sha512-SSrD0c1OQzlFX7pGu1eXxSEjemej64aaNPRhhVYUGqXh0BtldAAx37MG8btcumvpgKyZp1F5Gn3JkktdxiFv6w==}
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -1033,6 +1066,10 @@ packages:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
 
+  dotenv@16.4.5:
+    resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
+    engines: {node: '>=12'}
+
   dotenv@9.0.2:
     resolution: {integrity: sha512-I9OvvrHp4pIARv4+x9iuewrWycX6CcZtoAu1XrzPxc5UygMJXJZYmBsynku8IkrJwgypE5DGNjDPmPRhDCptUg==}
     engines: {node: '>=10'}
@@ -1183,6 +1220,9 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
+  eventemitter3@4.0.7:
+    resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
+
   events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
@@ -1233,6 +1273,15 @@ packages:
 
   flatted@3.3.1:
     resolution: {integrity: sha512-X8cqMLLie7KsNUDSdzeN8FYK9rEt4Dt67OsG/DNGnYTSDBG4uFAJFBnUeiV+zCVAvwFy56IjM9sH51jVaEhNxw==}
+
+  follow-redirects@1.15.6:
+    resolution: {integrity: sha512-wWN62YITEaOpSK584EZXJafH1AGpO8RVgElfkuXbTOrPX4fIfOyEpW/CsiNd8JdYrAoOvafRTOEnvsO++qCqFA==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
 
   for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
@@ -1351,6 +1400,10 @@ packages:
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
+
+  http-proxy@1.18.1:
+    resolution: {integrity: sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==}
+    engines: {node: '>=8.0.0'}
 
   human-signals@2.1.0:
     resolution: {integrity: sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==}
@@ -2070,6 +2123,9 @@ packages:
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
+
+  requires-port@1.0.0:
+    resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
 
   resolve-from@4.0.0:
     resolution: {integrity: sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==}
@@ -2904,6 +2960,8 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       remotion: 4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
+  '@remotion/paths@4.0.175': {}
+
   '@remotion/player@4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       react: 18.3.1
@@ -2931,6 +2989,12 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+
+  '@remotion/shapes@4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@remotion/paths': 4.0.175
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   '@remotion/studio-server@4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
@@ -2994,6 +3058,14 @@ snapshots:
       - typescript
       - webpack
 
+  '@remotion/transitions@4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@remotion/paths': 4.0.175
+      '@remotion/shapes': 4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      remotion: 4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+
   '@remotion/zod-types@4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.22.3)':
     dependencies:
       remotion: 4.0.175(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -3013,6 +3085,10 @@ snapshots:
       '@types/json-schema': 7.0.15
 
   '@types/estree@1.0.5': {}
+
+  '@types/http-proxy@1.17.14':
+    dependencies:
+      '@types/node': 20.14.6
 
   '@types/json-schema@7.0.15': {}
 
@@ -3548,6 +3624,8 @@ snapshots:
     dependencies:
       esutils: 2.0.3
 
+  dotenv@16.4.5: {}
+
   dotenv@9.0.2: {}
 
   eastasianwidth@0.2.0: {}
@@ -3793,6 +3871,8 @@ snapshots:
 
   esutils@2.0.3: {}
 
+  eventemitter3@4.0.7: {}
+
   events@3.3.0: {}
 
   execa@5.1.1:
@@ -3859,6 +3939,8 @@ snapshots:
       rimraf: 3.0.2
 
   flatted@3.3.1: {}
+
+  follow-redirects@1.15.6: {}
 
   for-each@0.3.3:
     dependencies:
@@ -3984,6 +4066,14 @@ snapshots:
   hasown@2.0.2:
     dependencies:
       function-bind: 1.1.2
+
+  http-proxy@1.18.1:
+    dependencies:
+      eventemitter3: 4.0.7
+      follow-redirects: 1.15.6
+      requires-port: 1.0.0
+    transitivePeerDependencies:
+      - debug
 
   human-signals@2.1.0: {}
 
@@ -4697,6 +4787,8 @@ snapshots:
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+
+  requires-port@1.0.0: {}
 
   resolve-from@4.0.0: {}
 

@@ -17,7 +17,10 @@
   "dependencies": {
     "@remotion/bundler": "4.0.175",
     "@remotion/cli": "4.0.175",
+    "@remotion/media-utils": "^4.0.175",
+    "@remotion/transitions": "^4.0.175",
     "@remotion/zod-types": "4.0.175",
+    "dotenv": "^16.4.5",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "remotion": "4.0.175",
@@ -25,11 +28,13 @@
   },
   "devDependencies": {
     "@remotion/eslint-config": "4.0.175",
+    "@remotion/tailwind": "4.0.175",
+    "@types/http-proxy": "^1.17.14",
     "@types/react": "^18.0.26",
     "@types/web": "^0.0.143",
     "eslint": "^8.43.0",
+    "http-proxy": "^1.18.1",
     "prettier": "^3.2.5",
-    "@remotion/tailwind": "4.0.175",
     "typescript": "5.4.5"
   },
   "scripts": {
