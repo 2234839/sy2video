@@ -16,19 +16,6 @@ export const RemotionRoot: React.FC = () => {
 		<>
 			<Folder name="siyuanCompositions">
 				<Composition
-					id="Block"
-					component={BlockComposition}
-					durationInFrames={defaultTime}
-					fps={fps}
-					width={width}
-					height={height}
-					schema={BlockCompositionSchema}
-					defaultProps={{
-						blockId: '20240622103850-90v98k8',
-						delay: 2_000,
-					}}
-				/>
-				<Composition
 					id="Article"
 					component={ArticleComposition}
 					durationInFrames={0}
@@ -90,6 +77,19 @@ export const RemotionRoot: React.FC = () => {
 									return el.time + pre;
 								}, 0) * fps,
 						};
+					}}
+				/>
+				<Composition
+					id="Block"
+					component={BlockComposition}
+					durationInFrames={defaultTime}
+					fps={fps}
+					width={width}
+					height={height}
+					schema={BlockCompositionSchema}
+					defaultProps={{
+						blockId: '20240622103850-90v98k8',
+						delay: 2_000,
 					}}
 				/>
 			</Folder>

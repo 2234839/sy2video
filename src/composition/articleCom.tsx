@@ -1,15 +1,11 @@
+import { TransitionSeries } from '@remotion/transitions';
+import { useMemo } from 'react';
 import {
-	AbsoluteFill,
-	continueRender,
-	delayRender,
-	useVideoConfig,
+	useVideoConfig
 } from 'remotion';
-import {z} from 'zod';
-import {zColor} from '@remotion/zod-types';
-import {siyuanArticleInfo, type siyuanArticleInfoRes} from '../siyuan';
-import {useEffect, useMemo, useState} from 'react';
-import {TransitionSeries} from '@remotion/transitions';
-import {SegmentComposition} from './segmentCom';
+import { z } from 'zod';
+import { type siyuanArticleInfoRes } from '../siyuan';
+import { SegmentComposition } from './segmentCom';
 
 export const ArticleCompSchema = z.object({
 	articleId: z.string(),
@@ -45,7 +41,7 @@ export const ArticleComposition: React.FC<
 			{(props.segments ?? []).map((segment, i) => (
 				<TransitionSeries.Sequence
 					durationInFrames={fps * segment.time}
-					key={i}
+					key={segments[i].dataset.nodeId}
 				>
 					<SegmentComposition el={segments[i]} />
 				</TransitionSeries.Sequence>

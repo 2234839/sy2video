@@ -1,5 +1,5 @@
 /** 鉴权代理 */
-const siyuanApi = `http://localhost:3001`;
+const siyuanApi = `http://localhost:6805`;
 type siyuanRes<T> = {
 	code: number;
 	msg: string;

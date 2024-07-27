@@ -15,31 +15,32 @@
     }
   },
   "dependencies": {
-    "@remotion/bundler": "^4.0.177",
-    "@remotion/cli": "^4.0.177",
-    "@remotion/media-utils": "^4.0.177",
-    "@remotion/transitions": "^4.0.177",
-    "@remotion/zod-types": "^4.0.177",
+    "@remotion/bundler": "^4.0.187",
+    "@remotion/cli": "^4.0.187",
+    "@remotion/media-utils": "^4.0.187",
+    "@remotion/transitions": "^4.0.187",
+    "@remotion/zod-types": "^4.0.187",
     "dotenv": "^16.4.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "remotion": "^4.0.177",
+    "remotion": "^4.0.187",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@remotion/eslint-config": "^4.0.177",
-    "@remotion/tailwind": "^4.0.177",
+    "@remotion/eslint-config": "^4.0.187",
+    "@remotion/renderer": "^4.0.187",
+    "@remotion/tailwind": "^4.0.187",
     "@types/http-proxy": "^1.17.14",
     "@types/react": "^18.3.3",
     "@types/web": "^0.0.143",
     "eslint": "^8.57.0",
     "http-proxy": "^1.18.1",
-    "prettier": "^3.3.2",
-    "typescript": "^5.5.2"
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
   },
   "scripts": {
     "start": "remotion studio",
-    "build": "remotion render MyComp out/video.mp4",
+    "build": "remotion render Article out/video.mp4",
     "upgrade": "remotion upgrade",
     "test": "eslint src --ext ts,tsx,js,jsx && tsc"
   },
