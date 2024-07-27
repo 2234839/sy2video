@@ -1,5 +1,5 @@
 import {Composition, Folder} from 'remotion';
-import {calcArticle} from './calculateMetadata/article';
+import {calcArticle} from './calculateMetadata/calcArticle';
 import {BlockComposition, BlockCompositionSchema} from './composition/BlockCom';
 import {ArticleComposition, ArticleCompSchema} from './composition/articleCom';
 import './style.css';
@@ -11,7 +11,7 @@ export const RemotionRoot: React.FC = () => {
 	const defaultTime = fps * 5;
 	return (
 		<>
-			<Folder name="siyuanCompositions">
+			<Folder name="思源组件">
 				<Composition
 					id="Article"
 					component={ArticleComposition}
