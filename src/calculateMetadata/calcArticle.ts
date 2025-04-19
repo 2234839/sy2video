@@ -1,15 +1,18 @@
 import {cancelRender} from 'remotion';
 import {siyuanArticleInfo, siyuanAsset} from '../siyuan';
+
+/** 计算文章元数据并返回渲染信息 */
 export async function calcArticle(
 	props: {articleId: string},
 	options: {fps: number},
 ) {
 	const article = await siyuanArticleInfo(props.articleId);
-	const articleDom = document.createElement('div');
-	articleDom.innerHTML = article!.data.content;
+	// 使用 DOMParser 安全解析 HTML，避免执行脚本
+	const parser = new DOMParser();
+	const articleDoc = parser.parseFromString(article!.data.content, 'text/html');
 	const segments = await Promise.all(
 		[
-			...articleDom.querySelectorAll<HTMLElement>(
+			...articleDoc.querySelectorAll<HTMLElement>(
 				`[data-type="NodeSuperBlock"]`,
 			),
 		].map(async (el, index) => {
@@ -25,19 +28,12 @@ export async function calcArticle(
 			console.log('[sy2videoConfig]', config);
 			let time = config.time ?? 4;
 
-      /** 在用户没有指定块播放时长的情况下尝试通过块内的内容进行计算一个合理的时长 */
 			if (config.time === undefined && audios.length) {
-				// 创建一个新的 Audio 对象
 				time = await new Promise((r) => {
 					const audio = new Audio(siyuanAsset(audios[0].dataset.src!));
-					// 加载音频文件元数据（包括时长）
 					audio.load();
-
-					// 一旦音频元数据加载完成，就可以获取时长
 					audio.addEventListener('loadedmetadata', () => {
-						const duration = audio.duration;
-						console.log('音频时长（秒）:', duration);
-						r(Math.round(duration));
+						r(Math.round(audio.duration));
 					});
 				});
 			}
@@ -57,8 +53,6 @@ export async function calcArticle(
 			segments,
 		},
 		durationInFrames:
-			segments.reduce((pre, el) => {
-				return el.time + pre;
-			}, 0) * options.fps,
+			segments.reduce((pre, el) => el.time + pre, 0) * options.fps,
 	};
 }

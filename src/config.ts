@@ -1,5 +1,6 @@
 import {config as dotenvConfig} from 'dotenv';
 
+
 const env = dotenvConfig();
 export const config = {
 	token: env.parsed?.siyuan_token,
