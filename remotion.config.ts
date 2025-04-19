@@ -7,14 +7,13 @@
 
 import {Config} from '@remotion/cli/config';
 import {webpackOverride} from './src/webpack-override';
-import { cpus } from "os";
 Config.setVideoImageFormat('jpeg');
 Config.setOverwriteOutput(true);
 
 Config.overrideWebpackConfig(webpackOverride);
 
 Config.setChromiumHeadlessMode(false)
-Config.setBrowserExecutable("C:/Users/llej/AppData/Local/Thorium/Application/thorium.exe")
+// Config.setBrowserExecutable("C:/Users/llej/AppData/Local/Thorium/Application/thorium.exe")
 Config.setChromiumDisableWebSecurity(true)
 Config.setChromiumIgnoreCertificateErrors(true)
 
