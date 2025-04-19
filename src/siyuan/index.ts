@@ -1,5 +1,5 @@
 /** 鉴权代理 */
-const siyuanApi = `http://192.168.1.12:6899`;
+const siyuanApi = process.env.proxy_base;
 type siyuanRes<T> = {
 	code: number;
 	msg: string;
