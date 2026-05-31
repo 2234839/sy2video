@@ -8,6 +8,7 @@
 import {Config} from '@remotion/cli/config';
 import {webpackOverride} from './src/webpack-override';
 Config.setVideoImageFormat('jpeg');
+Config.setExperimentalRspackEnabled(true);
 Config.setOverwriteOutput(true);
 
 Config.overrideWebpackConfig(webpackOverride);
@@ -16,8 +17,8 @@ Config.setChromiumHeadlessMode(false)
 // Config.setBrowserExecutable("C:/Users/llej/AppData/Local/Thorium/Application/thorium.exe")
 Config.setChromiumDisableWebSecurity(true)
 Config.setChromiumIgnoreCertificateErrors(true)
-
 // 关闭并发渲染，并发渲染虽然快，但 Remotion 的实现有问题，iframe 的形式来引入块会导致画面闪烁
+// 我通过设置足够的延迟来规避这一点了
 // Config.setConcurrency(1);
 // 默认设置
 //   Rendering frames     ━━━━━━━━━━━━━━━━━━ 720/720

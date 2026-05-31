@@ -1,46 +1,51 @@
-import {Composition, Folder} from 'remotion';
-import {calcArticle} from './calculateMetadata/calcArticle';
-import {BlockComposition, BlockCompositionSchema} from './composition/BlockCom';
-import {ArticleComposition, ArticleCompSchema} from './composition/articleCom';
+import {Composition} from 'remotion';
+import {calculateArticleMetadata} from './metadata/calculateArticleMetadata';
+import {ArticleComposition} from './composition/ArticleComposition';
+import {ArticleCompSchema} from './composition/schemas';
+import {VideoOcrPlugin, VIDEO_OCR_PLUGIN_DURATION} from './generated/video-ocr-plugin';
+import {VideoWebfont, VIDEO_WEBFONT_DURATION} from './generated/video-webfont';
 import './style.css';
 
 export const RemotionRoot: React.FC = () => {
 	const fps = 24;
 	const width = 1920;
 	const height = 1080;
-	const defaultTime = fps * 5;
 	return (
 		<>
-			<Folder name="思源组件">
-				<Composition
-					id="Article"
-					component={ArticleComposition}
-					durationInFrames={0}
-					fps={fps}
-					width={width}
-					height={height}
-					schema={ArticleCompSchema}
-					defaultProps={{
-						articleId: '20240620185326-hl2ywbv',
-					}}
-					calculateMetadata={async ({props, abortSignal}) => {
-						return calcArticle(props, {fps});
-					}}
-				/>
-				<Composition
-					id="Block"
-					component={BlockComposition}
-					durationInFrames={defaultTime}
-					fps={fps}
-					width={width}
-					height={height}
-					schema={BlockCompositionSchema}
-					defaultProps={{
-						blockId: '20240622103850-90v98k8',
-						delay: 2_000,
-					}}
-				/>
-			</Folder>
+			<Composition
+				id="Article"
+				component={ArticleComposition}
+				durationInFrames={0}
+				fps={fps}
+				width={width}
+				height={height}
+				schema={ArticleCompSchema}
+				defaultProps={{
+					articleId: '20240620185326-hl2ywbv',
+				}}
+				calculateMetadata={async ({props}) => {
+					return calculateArticleMetadata(props, {fps});
+				}}
+			/>
+
+			{/* AI 生成的视频 */}
+			<Composition
+				id="VideoOcrPlugin"
+				component={VideoOcrPlugin}
+				durationInFrames={VIDEO_OCR_PLUGIN_DURATION}
+				fps={fps}
+				width={width}
+				height={height}
+			/>
+
+			<Composition
+				id="VideoWebfont"
+				component={VideoWebfont}
+				durationInFrames={VIDEO_WEBFONT_DURATION}
+				fps={fps}
+				width={width}
+				height={height}
+			/>
 		</>
 	);
 };
