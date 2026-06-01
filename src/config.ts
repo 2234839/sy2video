@@ -15,4 +15,6 @@ export const config = {
 	proxyBaseUrl: process.env.proxy_base || 'http://localhost:6899',
 	/** 代理服务器端口 */
 	proxyBasePort: parseInt(process.env.proxy_port || '6899', 10),
+	/** FunASR WebSocket 服务地址（语音转写） */
+	funasrWsUrl: process.env.funasr_ws_url || 'ws://localhost:10095',
 };
