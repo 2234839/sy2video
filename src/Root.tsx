@@ -3,13 +3,16 @@ import {calculateArticleMetadata} from './metadata/calculateArticleMetadata';
 import {ArticleComposition} from './composition/ArticleComposition';
 import {ArticleCompSchema} from './composition/schemas';
 import {VideoOcrPlugin, VIDEO_OCR_PLUGIN_DURATION} from './generated/video-ocr-plugin';
-import {VideoWebfont, VIDEO_WEBFONT_DURATION} from './generated/video-webfont';
+import {VideoWebfont, VideoWebfontPortrait, VIDEO_WEBFONT_DURATION} from './generated/video-webfont';
 import './style.css';
+
+/** 横屏参数 */
+const LANDSCAPE = {width: 1920, height: 1080};
+/** 竖屏参数 */
+const PORTRAIT = {width: 1080, height: 1920};
 
 export const RemotionRoot: React.FC = () => {
 	const fps = 24;
-	const width = 1920;
-	const height = 1080;
 	return (
 		<>
 			<Composition
@@ -17,8 +20,8 @@ export const RemotionRoot: React.FC = () => {
 				component={ArticleComposition}
 				durationInFrames={0}
 				fps={fps}
-				width={width}
-				height={height}
+				width={LANDSCAPE.width}
+				height={LANDSCAPE.height}
 				schema={ArticleCompSchema}
 				defaultProps={{
 					articleId: '20240620185326-hl2ywbv',
@@ -28,14 +31,14 @@ export const RemotionRoot: React.FC = () => {
 				}}
 			/>
 
-			{/* AI 生成的视频 */}
+			{/* AI 生成的视频 — 横屏 */}
 			<Composition
 				id="VideoOcrPlugin"
 				component={VideoOcrPlugin}
 				durationInFrames={VIDEO_OCR_PLUGIN_DURATION}
 				fps={fps}
-				width={width}
-				height={height}
+				width={LANDSCAPE.width}
+				height={LANDSCAPE.height}
 			/>
 
 			<Composition
@@ -43,8 +46,18 @@ export const RemotionRoot: React.FC = () => {
 				component={VideoWebfont}
 				durationInFrames={VIDEO_WEBFONT_DURATION}
 				fps={fps}
-				width={width}
-				height={height}
+				width={LANDSCAPE.width}
+				height={LANDSCAPE.height}
+			/>
+
+			{/* 竖屏版本 */}
+			<Composition
+				id="VideoWebfont-Portrait"
+				component={VideoWebfontPortrait}
+				durationInFrames={VIDEO_WEBFONT_DURATION}
+				fps={fps}
+				width={PORTRAIT.width}
+				height={PORTRAIT.height}
 			/>
 		</>
 	);

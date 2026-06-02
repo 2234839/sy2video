@@ -7,6 +7,7 @@
 ## 👤 创作者信息
 
 - **昵称**：崮生
+- **github**：[崮生](https://github.com/2234839)
 - **头像**：通过 `staticFile('崮生/崮生帐号头像.png')` 引用
 - **定位**：AI-native Toolmaker，专注用技术创造工具而非追逐热点
 - **风格关键词**：务实、开源、工程美学
@@ -176,9 +177,13 @@ src/
   components/           ★ 通用组件（跨视频复用的基础组件）
     Subtitle.tsx        双语字幕叠加层（放在 TransitionSeries 外面，zIndex: 999）
   templates/           ★ 可复用的特效/布局组件（AI 的"乐高积木"）
+  hooks/               ★ 横竖屏适配 Hooks
+    useAspectRatio.ts   检测 landscape/portrait
+    useSafeArea.ts      安全区 padding 自适应
+    useResponsiveSize.ts 基于 1920px 按比例缩放
   generated/           ★ AI 生成的视频组件（每次生成一个 .tsx）
   config.ts            统一配置（.env 环境变量）
-  Root.tsx             Remotion 入口（注册所有 Composition）
+  Root.tsx             Remotion 入口（每个视频注册横屏+竖屏两套 Composition）
   webpack-override.ts  Rspack/Webpack 配置覆盖
 ```
 
@@ -259,11 +264,15 @@ import {loadNotoSansSC} from '../theme/fonts';
 import {darkTheme} from '../theme/presets';
 import {siyuanClient} from '../siyuan/client';
 // 按需导入模板组件
+import {SceneShell} from '../templates/SceneShell';
+import {AnimatedText} from '../templates/AnimatedText';
+import {AnimatedCounter} from '../templates/AnimatedCounter';
+import {CodeTyper} from '../templates/CodeTyper';
+import {GlassCard} from '../templates/GlassCard';
+import {Signature} from '../templates/Signature';
 import {TitleCard} from '../templates/TitleCard';
 import {KenBurnsImage} from '../templates/KenBurnsImage';
 import {SplitLayout} from '../templates/SplitLayout';
-import {GradientBackground} from '../templates/GradientBackground';
-import {TextReveal} from '../templates/TextReveal';
 
 /** 思源资源 URL 辅助 */
 const asset = (p: string) => siyuanClient.assetUrl(p);
@@ -351,9 +360,12 @@ export const VideoName: React.FC = () => {
 然后在 `src/Root.tsx` 注册 Composition：
 
 ```tsx
-import {VideoName, VIDEO_DURATION} from './generated/video-name';
+import {VideoName, VideoNamePortrait, VIDEO_DURATION} from './generated/video-name';
 
 // 在 RemotionRoot 的 return 中添加：
+// ★ 横屏和竖屏是独立的组件，各自针对观看设备优化布局
+//   横屏：电脑/电视观看，字号适中，可用左右分栏
+//   竖屏：手机观看，字号更大，上下布局为主，字幕边距更小
 <Composition
   id="VideoName"
   component={VideoName}
@@ -362,7 +374,96 @@ import {VideoName, VIDEO_DURATION} from './generated/video-name';
   width={1920}
   height={1080}
 />
+<Composition
+  id="VideoName-Portrait"
+  component={VideoNamePortrait}
+  durationInFrames={VIDEO_DURATION}
+  fps={24}
+  width={1080}
+  height={1920}
+/>
 ```
+
+#### ★ 横竖屏适配：SizeTheme 模式
+
+**核心思路**：定义 `SizeTheme` 接口 + 横屏/竖屏两套常量，场景组件接受 `s: SizeTheme` 参数，内部用 `s.xxx` 引用所有尺寸。**不再写两套重复的场景组件**。
+
+```typescript
+/** 尺寸主题：所有场景中用到的字号、间距、头像大小 */
+interface SizeTheme {
+  isPortrait: boolean;
+  chat: { padding: string; maxWidth: string; avatarSize: number; textFontSize: number; senderFontSize: number; avatarFontSize: number };
+  s1: { label: number; title: number; subtitle: number };
+  s2: { gap: number };
+  s3: { counter: number; description: number };
+  s4: { codeFontSize: number; emoji: number; cardTitle: number; cardDesc: number; direction: 'row' | 'column' };
+  s5: { label: number; title: number; compareNumber: number; compareLabel: number; arrow: number };
+  s6: { title: number; url: number; slogan: number };
+}
+
+/** 横屏尺寸（1920×1080） */
+const LANDSCAPE_SIZE: SizeTheme = {
+  isPortrait: false,
+  chat: { padding: '0 60px', maxWidth: '65%', avatarSize: 36, avatarFontSize: 14, senderFontSize: 13, textFontSize: 20 },
+  s1: { label: 24, title: 56, subtitle: 28 },
+  s2: { gap: 20 },
+  s3: { counter: 120, description: 22 },
+  s4: { codeFontSize: 20, emoji: 28, cardTitle: 20, cardDesc: 15, direction: 'row' },
+  s5: { label: 22, title: 48, compareNumber: 52, compareLabel: 18, arrow: 40 },
+  s6: { title: 56, url: 36, slogan: 20 },
+};
+
+/** 竖屏尺寸（1080×1920）— 手机观看 */
+const PORTRAIT_SIZE: SizeTheme = {
+  isPortrait: true,
+  chat: { padding: '0 24px', maxWidth: '85%', avatarSize: 44, avatarFontSize: 18, senderFontSize: 18, textFontSize: 30 },
+  s1: { label: 36, title: 52, subtitle: 38 },
+  s2: { gap: 16 },
+  s3: { counter: 120, description: 32 },
+  s4: { codeFontSize: 26, emoji: 32, cardTitle: 22, cardDesc: 18, direction: 'column' },
+  s5: { label: 30, title: 44, compareNumber: 56, compareLabel: 28, arrow: 44 },
+  s6: { title: 52, url: 32, slogan: 28 },
+};
+
+// 场景组件签名：
+const Scene1Hook: React.FC<{s: SizeTheme}> = ({s}) => (
+  <AnimatedText fontSize={s.s1.title} ... />
+);
+
+// 导出：
+export const VideoName: React.FC = () => <VideoShell s={LANDSCAPE_SIZE} />;
+export const VideoNamePortrait: React.FC = () => <VideoShell s={PORTRAIT_SIZE} />;
+```
+
+**竖屏适配规则**：
+- **上下布局**：横屏的左右分栏 → 竖屏改为上下排列（通过 `s.s4.direction`）
+- **聊天气泡**：竖屏全宽 `maxWidth: 85%`，横屏限宽 `65%`
+- **代码区**：竖屏单栏全宽，CodeTyper 传 `fontSize={s.s4.codeFontSize}`
+- **安全区**：竖屏上 120px、下 200px（字幕更大）、左右 24px
+- **核心原则：竖屏任何文字不得低于 18px**
+
+**★ 竖屏字号规范（强制最低值）**：
+
+| 元素类型 | 横屏 | 竖屏 | 说明 |
+|---------|------|------|------|
+| 主标题 | 56px | 52px | 竖屏宽度更窄，52px 已占满 |
+| 副标题/描述 | 28px | 38px | 竖屏必须放大 |
+| 标签/副标题标签 | 24px | 36px | 竖屏标签也要看清 |
+| 大数字（计数器） | 120px | 120px | 保持醒目 |
+| 聊天气泡正文 | 20px | 30px | 竖屏气泡文字必须大 |
+| 聊天气泡发送者名 | 13px | 18px | |
+| 卡片标题 | 20px | 22px | |
+| 卡片说明文字 | 15px | 18px | **最低 18px** |
+| 代码编辑器 | 20px | 26px | CodeTyper 传 `fontSize={26}` |
+| 数据对比数字 | 52px | 56px | |
+| 数据对比标签 | 18px | 28px | |
+| URL 展示 | 36px | 32px | 竖屏宽度限制，32px 足够 |
+| 底部描述/标语 | 20px | 28px | |
+| 字幕中文 | 32px | 40px | Subtitle 组件已内置自适应 |
+| 字幕英文 | 28px | 34px | Subtitle 组件已内置自适应 |
+| emoji/图标 | 28px | 32px | |
+
+共享数据（SUBS、时长、AUDIO_TRACKS、颜色 C）放在文件顶部，场景组件只写一份。
 
 ### 6. 验证和渲染
 
@@ -430,6 +531,28 @@ import {Subtitle, SubtitleSentence} from './components/Subtitle';
 ]} />
 ```
 
+### 场景组件（★ 新视频优先使用）
+
+```typescript
+import {SceneShell} from './templates/SceneShell';        // 场景容器 — 渐变背景 + 安全区
+import {AnimatedText} from './templates/AnimatedText';     // 文字动画 — spring-in/typewriter/slide-up/split-in
+import {AnimatedCounter} from './templates/AnimatedCounter'; // 数字计数 — 大数字 + spring 入场
+import {CodeTyper} from './templates/CodeTyper';           // 代码打字 — 终端模拟 + 语法高亮
+import {GlassCard} from './templates/GlassCard';           // 毛玻璃卡片 — backdrop-blur + spring 入场
+import {Signature} from './templates/Signature';           // 崮生签名 — 头像 + 品牌标语
+```
+
+### 横竖屏适配 Hooks
+
+```typescript
+import {useAspectRatio} from './hooks/useAspectRatio';     // 'landscape' | 'portrait'
+import {useSafeArea} from './hooks/useSafeArea';           // 安全区 padding 字符串
+import {useSafeAreaValues} from './hooks/useSafeArea';     // {top, right, bottom, left}
+import {useResponsiveSize} from './hooks/useResponsiveSize'; // 基于 1920px 按比例缩放
+```
+
+注意：这些 hooks 用于组件内部微调。**场景布局由横屏/竖屏两个独立组件各自控制**，而不是完全依赖 hook 自动适配。
+
 ### 块渲染组件
 
 ```typescript
@@ -475,6 +598,52 @@ import {AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring, Img,
 
 <!-- TEMPLATE_CATALOG_START -->
 
+### SceneShell (`src/templates/SceneShell.tsx`)
+场景统一容器 — 渐变背景 + 安全区 padding。**每个场景都应该用 SceneShell 包裹**。
+```tsx
+<SceneShell gradientColors={['#0f2027', '#203a43', '#2c5364']}>
+  <AnimatedText text="标题" />
+</SceneShell>
+```
+Props: `gradientColors`(必填, string[]), `angle`(默认135), `children`(必填)
+
+### AnimatedText (`src/templates/AnimatedText.tsx`)
+增强版文字动画，4 种入场模式。替代直接写 interpolate 文字动画。
+```tsx
+<AnimatedText text="开源项目分享" mode="spring-in" fontSize={56} delay={12} />
+```
+Props: `text`(必填), `mode`("spring-in"|"typewriter"|"slide-up"|"split-in"), `fontSize`(48), `color`, `delay`(0), `textAlign`('center'), `fontWeight`(600)
+
+### AnimatedCounter (`src/templates/AnimatedCounter.tsx`)
+大数字计数动画 — spring 入场 + interpolate 从 0 计数到目标值。适合数据展示场景。
+```tsx
+<AnimatedCounter target={20000} prefix="¥" suffix="+" fontSize={120} color="#f59e0b" description="每月费用" />
+```
+Props: `target`(必填), `prefix`, `suffix`, `fontSize`(120), `color`('#f59e0b'), `description`, `descriptionColor`, `delay`(0), `duration`
+
+### CodeTyper (`src/templates/CodeTyper.tsx`)
+终端风格代码打字模拟 — 深色背景 + 语法高亮 + 逐字符出现 + 光标闪烁。消除 PPT 感的核心组件。
+```tsx
+<CodeTyper code={`npm install webfont\nimport { subset } from 'webfont'`} speed={18} language="TypeScript" />
+```
+Props: `code`(必填), `speed`(15 字符/秒), `language`, `showLineNumbers`(true), `delay`(0)
+
+### GlassCard (`src/templates/GlassCard.tsx`)
+毛玻璃卡片 — 半透明背景 + backdrop-blur + 细边框 + spring 入场滑入。适合特性/数据展示。
+```tsx
+<GlassCard delay={24}>
+  <div>⚡ 毫秒级裁剪</div>
+</GlassCard>
+```
+Props: `children`(必填), `delay`(0), `padding`('24px 32px'), `borderRadius`(16)
+
+### Signature (`src/templates/Signature.tsx`)
+崮生品牌签名 — 头像 + "崮生 · AI-native Toolmaker"，spring 入场。所有视频结尾复用。
+```tsx
+<Signature delay={72} />
+```
+Props: `delay`(0)
+
 ### KenBurnsImage (`src/templates/KenBurnsImage.tsx`)
 全屏图片 + Ken Burns 缓慢缩放动画。适合照片/风景。
 ```tsx
@@ -482,35 +651,26 @@ import {AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring, Img,
 ```
 Props: `src`(必填), `direction`("zoom-in"|"zoom-out"), `fromScale`, `toScale`, `objectFit`
 
-### TextReveal (`src/templates/TextReveal.tsx`)
-文字出现动画，支持 fade-in / typewriter / slide-up / word-by-word 四种模式。
-```tsx
-<TextReveal text="你好世界" mode="slide-up" fontSize={64} />
-```
-Props: `text`(必填), `fontSize`, `mode`, `color`, `textAlign`, `padding`
-
-### GradientBackground (`src/templates/GradientBackground.tsx`)
-多色渐变背景 + 可选动画。常作为其他组件的背景层。
-```tsx
-<GradientBackground colors={['#667eea', '#764ba2']} angle={135} animated>
-  <TextReveal text="标题" />
-</GradientBackground>
-```
-Props: `colors`(必填, 至少2色), `angle`, `animated`, `children`
-
 ### SplitLayout (`src/templates/SplitLayout.tsx`)
 左右/上下分屏布局，内容各占一半或自定义比例。
 ```tsx
-<SplitLayout ratio={0.6} left={<KenBurnsImage src={url} />} right={<TextReveal text="描述" />} />
+<SplitLayout ratio={0.6} left={<KenBurnsImage src={url} />} right={<AnimatedText text="描述" />} />
 ```
 Props: `direction`("row"|"column"), `ratio`(0-1), `gap`, `left`(必填), `right`(必填)
 
 ### TitleCard (`src/templates/TitleCard.tsx`)
-居中大标题 + 可选副标题 + 渐变背景。适合章节封面、标题页。
+居中大标题 + 可选副标题 + 渐变背景。用 SceneShell 包裹。适合章节封面、标题页。
 ```tsx
-<TitleCard title="OCR 插件的神奇之处" subtitle="思源笔记工具介绍" backgroundColors={['#0f0c29', '#302b63']} />
+<TitleCard title="OCR 插件的神奇之处" subtitle="思源笔记工具介绍" gradientColors={['#0f0c29', '#302b63']} />
 ```
-Props: `title`(必填), `subtitle`, `backgroundColors`, `color`, `fontSize`
+Props: `title`(必填), `subtitle`, `gradientColors`, `color`, `fontSize`
+
+### Hooks（`src/hooks/`）
+
+- `useAspectRatio()` — 返回 `'landscape' | 'portrait'`，基于 Composition 宽高比
+- `useSafeArea()` — 返回安全区 padding 字符串（横竖屏自适应）
+- `useSafeAreaValues()` — 返回 `{top, right, bottom, left}` 对象
+- `useResponsiveSize(baseSize)` — 基于 1920px 基准按比例缩放尺寸
 
 <!-- TEMPLATE_CATALOG_END -->
 
@@ -581,6 +741,7 @@ Docker 部署的离线中文语音识别服务：
 pnpm start          # Remotion Studio 开发预览（端口 3001）
 pnpm proxy          # 启动思源 API 代理（端口 6899，需先启动）
 pnpm build          # 渲染 Article composition
+pnpm render <CompositionId>  # 同时渲染横屏+竖屏两个版本（例: pnpm render VideoWebfont）
 pnpm test           # ESLint + tsc 类型检查
 ```
 

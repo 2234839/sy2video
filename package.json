@@ -48,6 +48,7 @@
   "scripts": {
     "start": "remotion studio",
     "build": "remotion render Article out/video.mp4",
+    "render": "tsx --env-file=.env src/cli/render-video.ts",
     "upgrade": "remotion upgrade",
     "test": "eslint src --ext ts,tsx,js,jsx && tsc",
     "proxy": "tsx --env-file=.env src/proxy/cli.ts"

@@ -96,7 +96,7 @@ export const VideoOcrPlugin: React.FC = () => {
 								<TitleCard
 									title="OCR 插件的神奇之处"
 									subtitle="在思源笔记中直接复制图片上的文字"
-									backgroundColors={['transparent', 'transparent']}
+									gradientColors={['transparent', 'transparent']}
 									color="white"
 									fontSize={56}
 								/>

@@ -3,9 +3,14 @@
  *
  * 放在 TransitionSeries 外面，基于全局帧数计算当前应显示的句子。
  * 必须加 zIndex: 999，否则会被 TransitionSeries 内的 AbsoluteFill 场景层压住。
+ *
+ * ★ 自动适配横竖屏：
+ * - 竖屏：字号放大、左右撑满（仅留 24px 边距）
+ * - 横屏：字号适中、居中显示
  */
 import {useCurrentFrame, useVideoConfig, interpolate} from 'remotion';
 import {useTheme} from '../theme/context';
+import {useAspectRatio} from '../hooks/useAspectRatio';
 
 /** 单条字幕数据 */
 export interface SubtitleSentence {
@@ -34,6 +39,16 @@ export const Subtitle: React.FC<{
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
 	const theme = useTheme();
+	const ratio = useAspectRatio();
+
+	const isPortrait = ratio === 'portrait';
+
+	/** 竖屏字号更大 */
+	const cnFontSize = isPortrait ? 40 : 32;
+	const enFontSize = isPortrait ? 34 : 28;
+
+	/** 竖屏左右边距更小 */
+	const sideMargin = isPortrait ? 24 : 60;
 
 	const ms = (frame / fps) * 1000;
 
@@ -56,9 +71,9 @@ export const Subtitle: React.FC<{
 		<div
 			style={{
 				position: 'absolute',
-				bottom: 60,
-				left: '50%',
-				transform: 'translateX(-50%)',
+				bottom: isPortrait ? 40 : 60,
+				left: sideMargin,
+				right: sideMargin,
 				opacity,
 				textAlign: 'center',
 				zIndex: 999,
@@ -72,14 +87,14 @@ export const Subtitle: React.FC<{
 					alignItems: 'center',
 					backgroundColor: 'rgba(0,0,0,0.6)',
 					borderRadius: 12,
-					padding: hasEn ? '12px 32px 10px' : '10px 28px',
+					padding: hasEn ? '14px 36px 12px' : '12px 32px',
 					gap: hasEn ? 8 : 0,
 				}}
 			>
 				<span
 					style={{
 						fontFamily: theme.fontFamily,
-						fontSize: 32,
+						fontSize: cnFontSize,
 						color: 'white',
 						lineHeight: 1.4,
 					}}
@@ -99,7 +114,7 @@ export const Subtitle: React.FC<{
 						<span
 							style={{
 								fontFamily: theme.fontFamily,
-								fontSize: 28,
+								fontSize: enFontSize,
 								color: 'rgba(255,255,255,0.75)',
 								lineHeight: 1.4,
 							}}

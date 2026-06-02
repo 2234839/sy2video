@@ -1,29 +1,29 @@
 import {AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate} from 'remotion';
 
-interface GradientBackgroundProps {
+/**
+ * 渐变背景组件
+ *
+ * 多色渐变 + 可选角度动画（缓慢旋转）。
+ * 修正了 animated 模式：角度从 angle 缓慢旋转到 angle+30，
+ * 营造微妙的视觉变化而不做花哨效果。
+ *
+ * 用法：
+ * ```tsx
+ * <GradientBackground colors={['#0f2027', '#2c5364']} angle={135} animated>
+ *   <TitleCard title="标题" />
+ * </GradientBackground>
+ * ```
+ */
+export const GradientBackground: React.FC<{
 	/** 渐变颜色数组（至少 2 个） */
 	colors: string[];
 	/** 渐变角度（度） */
 	angle?: number;
-	/** 是否动画（颜色缓慢偏移） */
+	/** 是否启用角度缓慢旋转动画 */
 	animated?: boolean;
 	/** 子内容 */
 	children?: React.ReactNode;
-}
-
-/**
- * 渐变背景组件
- *
- * 支持多色渐变 + 可选动画效果
- *
- * 用法：
- * ```tsx
- * <GradientBackground colors={['#667eea', '#764ba2']} angle={135}>
- *   <TextReveal text="标题" />
- * </GradientBackground>
- * ```
- */
-export const GradientBackground: React.FC<GradientBackgroundProps> = ({
+}> = ({
 	colors,
 	angle = 135,
 	animated = false,
@@ -32,9 +32,9 @@ export const GradientBackground: React.FC<GradientBackgroundProps> = ({
 	const frame = useCurrentFrame();
 	const {durationInFrames} = useVideoConfig();
 
-	/** 动画模式下渐变角度缓慢旋转 */
+	/** 动画模式：角度缓慢偏移 30 度 */
 	const animatedAngle = animated
-		? angle + interpolate(frame, [0, durationInFrames], [0, 40])
+		? angle + interpolate(frame, [0, durationInFrames], [0, 30])
 		: angle;
 
 	const gradientColors = colors.length >= 2
