@@ -157,6 +157,15 @@ src/
     presets.ts         lightTheme / darkTheme 预设
     context.tsx         ThemeProvider + useTheme() hook
     fonts.ts           loadNotoSansSC() 字体加载
+  backgrounds/         ★ 背景风格体系
+    types.ts           BackgroundPreset / BaseLayer / AtmosphereLayer 类型
+    palettes.ts        12 种统一调色板（ember/ocean/cosmic/neon/...）
+    utils.ts           seededRandom 共享工具
+    presets.ts         8 种风格预设配置
+    SceneBackground.tsx 组合组件（base + atmosphere + grain + children）
+    AuroraMesh.tsx     极光流彩背景组件
+    NoiseGrain.tsx     胶片颗粒叠层组件
+    index.ts           统一导出
   animations/          动画预设
     presets.ts         fadeIn / slideInLeft / slideInRight / slideInUp / scaleIn / none
   composition/         Remotion Composition 层
@@ -269,6 +278,8 @@ import {AnimatedText} from '../templates/AnimatedText';
 import {AnimatedCounter} from '../templates/AnimatedCounter';
 import {CodeTyper} from '../templates/CodeTyper';
 import {GlassCard} from '../templates/GlassCard';
+import {GeometricShapes} from '../templates/GeometricShapes';
+import {SceneBackground} from '../backgrounds/SceneBackground';
 import {Signature} from '../templates/Signature';
 import {TitleCard} from '../templates/TitleCard';
 import {KenBurnsImage} from '../templates/KenBurnsImage';
@@ -539,6 +550,7 @@ import {AnimatedText} from './templates/AnimatedText';     // 文字动画 — s
 import {AnimatedCounter} from './templates/AnimatedCounter'; // 数字计数 — 大数字 + spring 入场
 import {CodeTyper} from './templates/CodeTyper';           // 代码打字 — 终端模拟 + 语法高亮
 import {GlassCard} from './templates/GlassCard';           // 毛玻璃卡片 — backdrop-blur + spring 入场
+import {GeometricShapes} from './templates/GeometricShapes'; // 几何色块背景 — 替代粒子/渐变
 import {Signature} from './templates/Signature';           // 崮生签名 — 头像 + 品牌标语
 ```
 
@@ -636,6 +648,39 @@ Props: `code`(必填), `speed`(15 字符/秒), `language`, `showLineNumbers`(tru
 </GlassCard>
 ```
 Props: `children`(必填), `delay`(0), `padding`('24px 32px'), `borderRadius`(16)
+
+### GeometricShapes (`src/templates/GeometricShapes.tsx`)
+几何色块背景 — 大面积、高饱和度的几何色块（圆、三角、矩形、圆环），替代粒子/渐变作为场景的视觉锚点。**★ 推荐作为所有场景的背景层**。
+```tsx
+<GeometricShapes palette="ember" count={6} seed={1} opacityMultiplier={1.2} />
+```
+Props: `palette`("ember"|"ocean"|"moss"|"neon"|"gold"|"rainbow"|string[]), `count`(8), `seed`(42), `opacityMultiplier`(1)
+- 6 种调色板预设：ember(红橙暖色)、ocean(蓝绿冷色)、moss(绿色自然)、neon(紫粉霓虹)、gold(金橙财富)、rainbow(多彩混合)
+- 色块尺寸 100-500px，透明度 0.08-0.3，缓慢漂浮旋转
+
+### SceneBackground (`src/backgrounds/SceneBackground.tsx`)
+场景背景组合层 — 通过 preset id 选择风格，自动组装 base + atmosphere + grain 三层。
+**★ 所有视频场景推荐使用 SceneBackground 替代手动写渐变背景。**
+```tsx
+<SceneBackground preset="geometric-bold" seed={1}>
+  <AnimatedText text="标题" />
+</SceneBackground>
+```
+Props: `preset`(必填, string), `seed`(42), `children`
+
+#### 可用预设风格
+
+| 预设 ID | 名称 | 视觉特征 | 适用场景 |
+|---------|------|---------|---------|
+| `geometric-bold` | 几何色块 | 大色块几何漂浮，高饱和度 | 技术产品展示、功能介绍 |
+| `aurora-mesh` | 极光流彩 | 柔和渐变色团叠加，macOS 壁纸感 | 产品介绍、教程、高端感 |
+| `neon-grid` | 赛博网格 | 透视网格 + 霓虹色（预留） | AI/安全/前沿技术 |
+| `bauhaus-clean` | 包豪斯极简 | 精准几何，红蓝黄原色（预留） | 教程系列、学术 |
+| `vaporwave-sunset` | 蒸汽波日落 | 水平渐变 + 大太阳（预留） | 创意编程、轻松话题 |
+| `blueprint-line` | 蓝图线条 | 深蓝底 + 白色网格（预留） | 系统架构、技术深潜 |
+| `memphis-retro` | 孟菲斯复古 | 活泼粉彩形状（预留） | 入门教程、社区更新 |
+
+用法：`<SceneBackground preset="geometric-bold">` — 当前只有 geometric-bold 和 aurora-mesh 有完整实现，其余为预留。
 
 ### Signature (`src/templates/Signature.tsx`)
 崮生品牌签名 — 头像 + "崮生 · AI-native Toolmaker"，spring 入场。所有视频结尾复用。
