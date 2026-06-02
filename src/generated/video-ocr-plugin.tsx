@@ -5,6 +5,7 @@ import {slide} from '@remotion/transitions/slide';
 import {ThemeProvider} from '../theme/context';
 import {loadNotoSansSC} from '../theme/fonts';
 import {darkTheme} from '../theme/presets';
+import {Subtitle} from '../components/Subtitle';
 import {siyuanClient} from '../siyuan/client';
 import {TitleCard} from '../templates/TitleCard';
 import {TextReveal} from '../templates/TextReveal';
@@ -69,49 +70,6 @@ const SlideInImage: React.FC<{
 					boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
 				}}
 			/>
-		</div>
-	);
-};
-
-/** 字幕组件：逐句显示，不带末尾标点 */
-const Subtitle: React.FC<{
-	sentences: Array<{start: number; end: number; text: string}>;
-}> = ({sentences}) => {
-	const frame = useCurrentFrame();
-	const {fps} = useVideoConfig();
-
-	const currentTimeMs = (frame / fps) * 1000;
-	const activeSentence = sentences.find(
-		(s) => currentTimeMs >= s.start && currentTimeMs <= s.end + 200,
-	);
-
-	if (!activeSentence) return null;
-
-	const progress = Math.min(1, (currentTimeMs - activeSentence.start) / 200);
-	const opacity = interpolate(progress, [0, 1], [0, 1], {
-		extrapolateLeft: 'clamp',
-		extrapolateRight: 'clamp',
-	});
-
-	return (
-		<div style={{
-			position: 'absolute',
-			bottom: 80,
-			left: 0,
-			right: 0,
-			textAlign: 'center',
-			opacity,
-		}}>
-			<span style={{
-				fontFamily: darkTheme.fontFamily,
-				fontSize: 36,
-				color: 'white',
-				backgroundColor: 'rgba(0,0,0,0.6)',
-				padding: '8px 24px',
-				borderRadius: 8,
-			}}>
-				{activeSentence.text}
-			</span>
 		</div>
 	);
 };

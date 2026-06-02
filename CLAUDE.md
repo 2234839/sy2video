@@ -4,6 +4,15 @@
 
 将思源笔记文档生成为视频。AI（Claude）读取笔记内容，设计视觉方案，直接写 Remotion React 组件代码，然后渲染导出视频。
 
+## 👤 创作者信息
+
+- **昵称**：崮生
+- **头像**：通过 `staticFile('崮生/崮生帐号头像.png')` 引用
+- **定位**：AI-native Toolmaker，专注用技术创造工具而非追逐热点
+- **风格关键词**：务实、开源、工程美学
+
+视频中的个人元素（如结尾签名、聊天头像）应使用以上信息，保持品牌一致性。
+
 ## 技术栈
 
 - **Remotion 4.x** — React 视频框架（Rspack 打包）
@@ -36,7 +45,7 @@ const theme = {
   secondaryText: '#94a3b8',
   tertiaryText: '#64748b',
   /** 强调色 */
-  accent: '#6366f1',     // Indigo — 主强调
+  accent: '#e94560',     // Crimson — 主强调（告别蓝紫）
   success: '#22c55e',    // Green — 正面数据
   warning: '#f59e0b',    // Amber — 金额/警示
 };
@@ -46,12 +55,12 @@ const theme = {
 
 | 名称 | 色值 | 适用场景 |
 |------|------|---------|
-| Plum Plate | `#667eea` → `#764ba2` | 通用科技感 |
-| Eternal Constance | `#09203f` → `#537895` | 沉稳深蓝 |
-| Night Sky | `#1e3c72` → `#2a5298` | 专业/商务 |
-| Sharp Blues | `#00c6fb` → `#005bea` | 轻快科技 |
-| Night Party | `#0250c5` → `#d43f8d` | 活力撞色 |
-| Deep Blue | `#6a11cb` → `#2575fc` | 深邃紫蓝 |
+| Forest Night | `#0f2027` → `#203a43` → `#2c5364` | 深邃沉稳 |
+| Ember Glow | `#1a1a2e` → `#16213e` → `#e94560` | 热情/警示 |
+| Amber Dusk | `#1a1a2e` → `#3d2c08` → `#b8860b` | 温暖/金额 |
+| Moss Garden | `#0f2027` → `#1b4332` → `#2d6a4f` | 自然/成长 |
+| Wine Dark | `#1a1a2e` → `#4a0e2b` → `#7b2d52` | 奢华/高端 |
+| Charcoal Steel | `#111111` → `#1a1a2e` → `#2d2d3f` | 通用暗色 |
 
 更多渐变参考 [WebGradients](https://webgradients.com/)。
 
@@ -164,6 +173,8 @@ src/
   proxy/               思源 API 代理服务器
     server.ts          HTTP 代理（注入 Authorization token）
     cli.ts             启动入口
+  components/           ★ 通用组件（跨视频复用的基础组件）
+    Subtitle.tsx        双语字幕叠加层（放在 TransitionSeries 外面，zIndex: 999）
   templates/           ★ 可复用的特效/布局组件（AI 的"乐高积木"）
   generated/           ★ AI 生成的视频组件（每次生成一个 .tsx）
   config.ts            统一配置（.env 环境变量）
@@ -405,6 +416,18 @@ analysis.duration                    // 总时长（秒）
 
 // Step 3: 执行裁剪
 const result = await applyCuts('/path/to/audio.m4a', cutRanges, '/tmp/clean.wav');
+```
+
+### 通用组件
+
+```typescript
+import {Subtitle, SubtitleSentence} from './components/Subtitle';
+
+// 双语/单语字幕 — 放在 TransitionSeries 外面
+<Subtitle sentences={[
+  {text: '中文', en: 'English', start: 0, end: 3000},
+  {text: '只有中文', start: 3000, end: 6000},  // en 可选
+]} />
 ```
 
 ### 块渲染组件

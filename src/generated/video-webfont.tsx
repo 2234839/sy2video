@@ -8,6 +8,7 @@
  * - 大数字计数动画强调核心数据
  * - Glassmorphism 特性卡片展示产品卖点
  * - 语音旁白驱动节奏，双语字幕
+ * - 使用崮生真实头像，个人品牌一致性
  *
  * ★ 音频和字幕放在 TransitionSeries 外面：
  * - 音频用 <Sequence> 指定全局时间区间（支持多段音频）
@@ -28,9 +29,13 @@ import {fade} from '@remotion/transitions/fade';
 import {ThemeProvider} from '../theme/context';
 import {loadNotoSansSC} from '../theme/fonts';
 import {darkTheme} from '../theme/presets';
+import {Subtitle} from '../components/Subtitle';
 
 /** 清洗后旁白音频 */
 const narration = staticFile('data/20260527150214-1aagcdc/narration.wav');
+
+/** 崮生真实头像 */
+const avatar = staticFile('崮生/崮生帐号头像.png');
 
 const FPS = 24;
 const TRANSITION_FRAMES = 12;
@@ -69,20 +74,28 @@ const AUDIO_TRACKS = [
 	},
 ];
 
-/** 颜色常量 */
+/** 颜色常量 — 告别蓝紫，使用 Crimson 暖色系 */
 const C = {
 	background: '#0a0a0a',
 	primary: '#ffffff',
 	secondary: '#94a3b8',
 	tertiary: '#64748b',
-	accent: '#6366f1',
+	/** Crimson — 主强调 */
+	accent: '#e94560',
 	success: '#22c55e',
 	warning: '#f59e0b',
 	cardBg: 'rgba(255, 255, 255, 0.05)',
 	cardBorder: 'rgba(255, 255, 255, 0.1)',
-	grad1: ['#09203f', '#537895'],
-	grad2: ['#0a0a0a', '#1a1a2e'],
-	grad3: ['#0250c5', '#d43f8d'],
+	/** Forest Night — 标题卡背景 */
+	grad1: ['#0f2027', '#203a43', '#2c5364'],
+	/** Charcoal Steel — 聊天/数据场景 */
+	grad2: ['#111111', '#1a1a2e', '#2d2d3f'],
+	/** Ember Glow — 信用背书场景 */
+	grad3: ['#1a1a2e', '#16213e', '#e94560'],
+	/** Moss Garden — 结尾 CTA */
+	grad4: ['#0f2027', '#1b4332', '#2d6a4f'],
+	/** Amber Dusk — 金额强调场景 */
+	grad5: ['#1a1a2e', '#3d2c08', '#b8860b'],
 	font: darkTheme.fontFamily,
 };
 
@@ -111,91 +124,11 @@ const SUBS = [
 
 // ========== 通用组件 ==========
 
-/**
- * 双语字幕叠加层 — 放在 TransitionSeries 外面，基于全局帧数
- *
- * 样式：一个半透明底，中文在上英文在下，大小一致，中间分隔线
- */
-const Subtitle: React.FC<{
-	sentences: Array<{text: string; en: string; start: number; end: number}>;
-}> = ({sentences}) => {
-	const frame = useCurrentFrame();
-	const {fps} = useVideoConfig();
-	const ms = (frame / fps) * 1000;
-
-	const active = sentences.find(
-		(s) => ms >= s.start && ms <= s.end + 200,
-	);
-	if (!active) return null;
-
-	const progress = Math.min(1, (ms - active.start) / 200);
-	const opacity = interpolate(progress, [0, 1], [0, 1], {
-		extrapolateLeft: 'clamp',
-		extrapolateRight: 'clamp',
-	});
-
-	return (
-		<div
-			style={{
-				position: 'absolute',
-				bottom: 60,
-				left: '50%',
-				transform: 'translateX(-50%)',
-				opacity,
-				textAlign: 'center',
-				zIndex: 999,
-				pointerEvents: 'none',
-			}}
-		>
-			<div
-				style={{
-					display: 'inline-flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					backgroundColor: 'rgba(0,0,0,0.6)',
-					borderRadius: 12,
-					padding: '12px 32px 10px',
-					gap: 8,
-				}}
-			>
-				<span
-					style={{
-						fontFamily: C.font,
-						fontSize: 32,
-						color: 'white',
-						lineHeight: 1.4,
-					}}
-				>
-					{active.text}
-				</span>
-				{/* 分隔线 */}
-				<div
-					style={{
-						width: '60%',
-						height: 1,
-						backgroundColor: 'rgba(255,255,255,0.25)',
-					}}
-				/>
-				<span
-					style={{
-						fontFamily: C.font,
-						fontSize: 28,
-						color: 'rgba(255,255,255,0.75)',
-						lineHeight: 1.4,
-					}}
-				>
-					{active.en}
-				</span>
-			</div>
-		</div>
-	);
-};
-
 /** 聊天气泡 */
 const ChatBubble: React.FC<{
 	/** 消息文本 */
 	text: string;
-	/** 是否自己发的（右对齐蓝色） */
+	/** 是否自己发的（右对齐） */
 	isSelf: boolean;
 	/** 延迟帧 */
 	delay: number;
@@ -225,32 +158,45 @@ const ChatBubble: React.FC<{
 				padding: '0 60px',
 			}}
 		>
-			{/* 头像 */}
-			<div
-				style={{
-					width: 40,
-					height: 40,
-					borderRadius: '50%',
-					backgroundColor: isSelf ? C.accent : '#475569',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					fontSize: 16,
-					color: 'white',
-					fontFamily: C.font,
-					flexShrink: 0,
-				}}
-			>
-				{isSelf ? '崮' : sender?.[0] ?? '友'}
-			</div>
+			{/* 头像 — 崮生用真实头像，其他人用首字母圆 */}
+			{isSelf ? (
+				<img
+					src={avatar}
+					style={{
+						width: 40,
+						height: 40,
+						borderRadius: '50%',
+						flexShrink: 0,
+						border: '2px solid rgba(233, 69, 96, 0.5)',
+					}}
+				/>
+			) : (
+				<div
+					style={{
+						width: 40,
+						height: 40,
+						borderRadius: '50%',
+						backgroundColor: '#475569',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						fontSize: 16,
+						color: 'white',
+						fontFamily: C.font,
+						flexShrink: 0,
+					}}
+				>
+					{sender?.[0] ?? '友'}
+				</div>
+			)}
 
 			{/* 气泡 */}
 			<div
 				style={{
 					backgroundColor: isSelf
-						? 'rgba(99, 102, 241, 0.15)'
+						? 'rgba(233, 69, 96, 0.12)'
 						: 'rgba(255, 255, 255, 0.06)',
-					border: `1px solid ${isSelf ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+					border: `1px solid ${isSelf ? 'rgba(233, 69, 96, 0.25)' : 'rgba(255, 255, 255, 0.1)'}`,
 					borderRadius: 16,
 					padding: '12px 20px',
 					maxWidth: '60%',
@@ -551,16 +497,26 @@ const TitleText: React.FC<{
 	);
 };
 
+/** 渐变背景组件（支持三色渐变） */
+const GradientBg: React.FC<{
+	/** 渐变色数组（2-3色） */
+	colors: string[];
+	/** 角度 */
+	angle?: number;
+}> = ({colors, angle = 135}) => (
+	<AbsoluteFill
+		style={{
+			background: `linear-gradient(${angle}deg, ${colors.join(', ')})`,
+		}}
+	/>
+);
+
 // ========== 场景组件（纯视觉，不含 Audio 和 Subtitle） ==========
 
-/** 场景1: 标题卡 */
+/** 场景1: 标题卡 — Forest Night */
 const Scene1Title: React.FC = () => (
 	<AbsoluteFill>
-		<AbsoluteFill
-			style={{
-				background: `linear-gradient(135deg, ${C.grad1[0]} 0%, ${C.grad1[1]} 100%)`,
-			}}
-		/>
+		<GradientBg colors={C.grad1} />
 		<AbsoluteFill
 			style={{
 				display: 'flex',
@@ -582,14 +538,10 @@ const Scene1Title: React.FC = () => (
 	</AbsoluteFill>
 );
 
-/** 场景2: 聊天气泡流 — 群友讲述问题 */
+/** 场景2: 聊天气泡流 — Charcoal Steel */
 const Scene2Pain: React.FC = () => (
 	<AbsoluteFill>
-		<AbsoluteFill
-			style={{
-				background: `linear-gradient(135deg, ${C.grad2[0]} 0%, ${C.grad2[1]} 100%)`,
-			}}
-		/>
+		<GradientBg colors={C.grad2} />
 		<AbsoluteFill
 			style={{
 				display: 'flex',
@@ -631,14 +583,10 @@ const Scene2Pain: React.FC = () => (
 	</AbsoluteFill>
 );
 
-/** 场景3: 大数字 ¥20,000+ */
+/** 场景3: 大数字 ¥20,000+ — Amber Dusk */
 const Scene3Stat: React.FC = () => (
 	<AbsoluteFill>
-		<AbsoluteFill
-			style={{
-				background: `linear-gradient(135deg, ${C.grad2[0]} 0%, ${C.grad2[1]} 100%)`,
-			}}
-		/>
+		<GradientBg colors={C.grad5} />
 		<AbsoluteFill
 			style={{
 				display: 'flex',
@@ -666,14 +614,10 @@ const Scene3Stat: React.FC = () => (
 	</AbsoluteFill>
 );
 
-/** 场景4: 推荐 webfont — 聊天气泡 + 特性卡片 */
+/** 场景4: 推荐 webfont — Charcoal Steel */
 const Scene4Solution: React.FC = () => (
 	<AbsoluteFill>
-		<AbsoluteFill
-			style={{
-				background: `linear-gradient(135deg, ${C.grad2[0]} 0%, ${C.grad2[1]} 100%)`,
-			}}
-		/>
+		<GradientBg colors={C.grad2} />
 		<AbsoluteFill
 			style={{
 				display: 'flex',
@@ -744,14 +688,10 @@ const Scene4Solution: React.FC = () => (
 	</AbsoluteFill>
 );
 
-/** 场景5: 阮一峰期刊 + 裁剪效果对比 */
+/** 场景5: 阮一峰期刊 + 裁剪效果对比 — Ember Glow */
 const Scene5Credibility: React.FC = () => (
 	<AbsoluteFill>
-		<AbsoluteFill
-			style={{
-				background: `linear-gradient(135deg, ${C.grad1[0]} 0%, ${C.grad1[1]} 100%)`,
-			}}
-		/>
+		<GradientBg colors={C.grad3} />
 		<AbsoluteFill
 			style={{
 				display: 'flex',
@@ -798,7 +738,7 @@ const Scene5Credibility: React.FC = () => (
 						原始中文字体
 					</div>
 				</div>
-				<div style={{fontSize: 48, color: C.secondary}}>→</div>
+				<div style={{fontSize: 48, color: C.accent}}>→</div>
 				<div style={{textAlign: 'center'}}>
 					<div
 						style={{
@@ -826,35 +766,72 @@ const Scene5Credibility: React.FC = () => (
 	</AbsoluteFill>
 );
 
-/** 场景6: 结尾 — URL + 号召 */
-const Scene6CTA: React.FC = () => (
-	<AbsoluteFill>
-		<AbsoluteFill
-			style={{
-				background: `linear-gradient(135deg, ${C.grad3[0]} 0%, ${C.grad3[1]} 100%)`,
-			}}
-		/>
-		<AbsoluteFill
-			style={{
-				display: 'flex',
-				flexDirection: 'column',
-				alignItems: 'center',
-				justifyContent: 'center',
-				padding: '150px 120px 170px',
-				boxSizing: 'border-box',
-				gap: 40,
-			}}
-		>
-			<TitleText text="试试看？" delay={FPS * 0.3} />
-			<UrlDisplay url="webfont.shenzilong.cn" delay={FPS * 1} />
-			<PillBadge
-				text="✨ 开源免费 · 毫秒级速度 · TTF & WOFF2"
-				delay={FPS * 2}
-				color={C.success}
-			/>
+/** 场景6: 结尾 — URL + 崮生签名 — Moss Garden */
+const Scene6CTA: React.FC = () => {
+	const frame = useCurrentFrame();
+	const {fps} = useVideoConfig();
+
+	const sigProgress = spring({
+		frame: frame - FPS * 3,
+		fps,
+		config: {damping: 200},
+	});
+
+	return (
+		<AbsoluteFill>
+			<GradientBg colors={C.grad4} />
+			<AbsoluteFill
+				style={{
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					justifyContent: 'center',
+					padding: '150px 120px 170px',
+					boxSizing: 'border-box',
+					gap: 40,
+				}}
+			>
+				<TitleText text="试试看？" delay={FPS * 0.3} />
+				<UrlDisplay url="webfont.shenzilong.cn" delay={FPS * 1} />
+				<PillBadge
+					text="✨ 开源免费 · 毫秒级速度 · TTF & WOFF2"
+					delay={FPS * 2}
+					color={C.success}
+				/>
+				{/* ★ 崮生签名 — 真实头像 + 昵称 */}
+				<div
+					style={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: 12,
+						marginTop: 16,
+						opacity: sigProgress,
+						transform: `translateY(${interpolate(sigProgress, [0, 1], [20, 0])}px)`,
+					}}
+				>
+					<img
+						src={avatar}
+						style={{
+							width: 32,
+							height: 32,
+							borderRadius: '50%',
+							border: '1.5px solid rgba(255,255,255,0.3)',
+						}}
+					/>
+					<span
+						style={{
+							fontSize: 20,
+							color: C.tertiary,
+							fontFamily: C.font,
+						}}
+					>
+						崮生 · AI-native Toolmaker
+					</span>
+				</div>
+			</AbsoluteFill>
 		</AbsoluteFill>
-	</AbsoluteFill>
-);
+	);
+};
 
 // ========== 主组件 ==========
 
