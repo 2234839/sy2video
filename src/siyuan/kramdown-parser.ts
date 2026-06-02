@@ -59,14 +59,14 @@ export function extractAssets(markdown: string): ParsedAssets {
 		assets.images.push({src: match[2], alt: match[1]});
 	}
 
-	/** <audio ... src="xxx" data-src="xxx" ...> */
-	const audioRegex = /<audio[^>]*\bdata-src="([^"]+)"[^>]*>/g;
+	/** <audio ... data-src="xxx" 或 src="xxx" ...> */
+	const audioRegex = /<audio[^>]*\b(?:data-)?src="([^"]+)"[^>]*>/g;
 	while ((match = audioRegex.exec(markdown)) !== null) {
 		assets.audios.push({src: match[1]});
 	}
 
-	/** <video ... src="xxx" data-src="xxx" ...> */
-	const videoRegex = /<video[^>]*\bdata-src="([^"]+)"[^>]*>/g;
+	/** <video ... data-src="xxx" 或 src="xxx" ...> */
+	const videoRegex = /<video[^>]*\b(?:data-)?src="([^"]+)"[^>]*>/g;
 	while ((match = videoRegex.exec(markdown)) !== null) {
 		assets.videos.push({src: match[1]});
 	}

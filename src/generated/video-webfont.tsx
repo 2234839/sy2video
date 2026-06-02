@@ -3,415 +3,934 @@
  *
  * 来源文档: 20260527150214-1aagcdc
  *
- * 视觉方案：
- * - Segment 1: 标题卡片 — 深色渐变背景，制造悬念
- * - Segment 2: 痛点展示 — 聊天截图全屏 + 底部渐变遮罩叠加文字
- * - Segment 3: 方案介绍 — 左侧聊天截图 + 右侧核心卖点
- * - Segment 4: 行动号召 — 渐变背景 + 网址 + 关键数据
+ * 风格：Dark Mode + Glassmorphism
+ * - 聊天内容用气泡流重新演绎（不直接贴截图）
+ * - 大数字计数动画强调核心数据
+ * - Glassmorphism 特性卡片展示产品卖点
+ * - 语音旁白驱动节奏，双语字幕
+ *
+ * ★ 音频和字幕放在 TransitionSeries 外面：
+ * - 音频用 <Sequence> 指定全局时间区间（支持多段音频）
+ * - 字幕基于全局帧数计算，也放在外面
  */
 import {
 	AbsoluteFill,
+	Audio,
 	useCurrentFrame,
 	useVideoConfig,
 	interpolate,
 	spring,
+	staticFile,
+	Sequence,
 } from 'remotion';
 import {TransitionSeries, linearTiming} from '@remotion/transitions';
 import {fade} from '@remotion/transitions/fade';
-import {slide} from '@remotion/transitions/slide';
 import {ThemeProvider} from '../theme/context';
 import {loadNotoSansSC} from '../theme/fonts';
 import {darkTheme} from '../theme/presets';
-import {siyuanClient} from '../siyuan/client';
-import {TitleCard} from '../templates/TitleCard';
-import {GradientBackground} from '../templates/GradientBackground';
 
-/** 思源资源 URL 辅助 */
-const asset = (path: string) => siyuanClient.assetUrl(path);
+/** 清洗后旁白音频 */
+const narration = staticFile('data/20260527150214-1aagcdc/narration.wav');
 
-/** 聊天截图资源路径 */
-const CHAT_IMG_1 = asset(
-	'assets/image-20260527150653-p0er4x6.webp',
-);
-const CHAT_IMG_2 = asset(
-	'assets/image-20260527151536-u03ueqn.webp',
-);
+const FPS = 24;
+const TRANSITION_FRAMES = 12;
 
-// ========== 各段落组件 ==========
+/** 场景时长（秒） */
+const S1_SEC = 5;
+const S2_SEC = 11;
+const S3_SEC = 8;
+const S4_SEC = 10;
+const S5_SEC = 9;
+const S6_SEC = 9;
 
-/** Segment 1: 标题卡片 (4秒) */
-const Segment1Title: React.FC = () => (
-	<TitleCard
-		title="群友白花了两万多"
-		subtitle="字体流量费用，本可以省下的…"
-		backgroundColors={['#0f0c29', '#302b63', '#24243e']}
-		fontSize={72}
-	/>
-);
+/** 过渡 5 次 × 12 帧 */
+const TRANSITION_COUNT = 5;
 
-/** Segment 2: 痛点展示 — 聊天截图全屏 + 叠加文字 (6秒) */
-const Segment2Pain: React.FC = () => {
+/** 总帧数 = 各段之和 - 过渡重叠 */
+export const VIDEO_WEBFONT_DURATION =
+	(S1_SEC + S2_SEC + S3_SEC + S4_SEC + S5_SEC + S6_SEC) * FPS -
+	TRANSITION_FRAMES * TRANSITION_COUNT;
+
+/**
+ * ★ 音频时间区间定义
+ *
+ * 每份音频用 {src, startFrame, durationFrames} 描述它在全局时间轴上的位置。
+ * 当前只有一段旁白，从第 0 帧开始，贯穿全片。
+ * 如果有多段录音，就在这里加多条。
+ */
+const AUDIO_TRACKS = [
+	{
+		src: narration,
+		/** 从第 0 帧开始 */
+		startFrame: 0,
+		/** 播放整个视频时长 */
+		durationFrames: VIDEO_WEBFONT_DURATION,
+		volume: 0.9,
+	},
+];
+
+/** 颜色常量 */
+const C = {
+	background: '#0a0a0a',
+	primary: '#ffffff',
+	secondary: '#94a3b8',
+	tertiary: '#64748b',
+	accent: '#6366f1',
+	success: '#22c55e',
+	warning: '#f59e0b',
+	cardBg: 'rgba(255, 255, 255, 0.05)',
+	cardBorder: 'rgba(255, 255, 255, 0.1)',
+	grad1: ['#09203f', '#537895'],
+	grad2: ['#0a0a0a', '#1a1a2e'],
+	grad3: ['#0250c5', '#d43f8d'],
+	font: darkTheme.fontFamily,
+};
+
+/**
+ * 双语字幕句子 — 对裁剪后音频重新 ASR 转写 → AI 翻译英文
+ * 时间轴（毫秒）来自裁剪后音频的真实转写结果
+ */
+const SUBS = [
+	{text: '今天和大家分享一个近期的事情', en: 'Today I want to share something recent', start: 720, end: 3980},
+	{text: '就是我在一个技术群里面看到群友说他们之前做一个网站里面有用到那个中文字体嘛', en: 'I saw someone in a tech group say they were using Chinese fonts on their website', start: 3980, end: 11839},
+	{text: '然后一个月的流量费用用了两万多块钱', en: 'And their monthly traffic cost was over 20,000 yuan', start: 11839, end: 15320},
+	{text: '我这个时候就很惊讶', en: 'I was really surprised', start: 15320, end: 16660},
+	{text: '这个他居然不知道我的字体裁剪项目', en: 'They didn\'t even know about my font subsetting project', start: 16660, end: 22310},
+	{text: '这个项目是可以做到增量加载字体的', en: 'This project enables incremental font loading', start: 22470, end: 25490},
+	{text: '两万块钱如果用我这个项目', en: 'With 20,000 yuan, using my project', start: 25490, end: 29110},
+	{text: '应该能支持非常大的体量了', en: 'It could support a very large scale', start: 29110, end: 32044},
+	{text: '咱们前端这块基础上还是流量费用', en: 'Frontend traffic costs are actually quite high', start: 32880, end: 37460},
+	{text: '其实是一个很高的费用', en: 'It\'s really a significant expense', start: 37460, end: 39085},
+	{text: '咱们还是要想办法去优化一下', en: 'We really need to find ways to optimize', start: 40150, end: 42690},
+	{text: '如果你也有使用中文字体的需求', en: 'If you also need Chinese fonts', start: 42690, end: 45530},
+	{text: '可以尝试一下我这个项目', en: 'Give my project a try', start: 45530, end: 47070},
+	{text: '绝对是国内啊，不能说国内吧', en: 'Definitely the best in China, well, not just China', start: 47070, end: 50430},
+	{text: '绝对是开源界最好的一个方案了', en: 'Definitely the best solution in the open source world', start: 50430, end: 54005},
+	{text: '这是一个开源的最好方案', en: 'This is the best open source solution', start: 54710, end: 55615},
+];
+
+// ========== 通用组件 ==========
+
+/**
+ * 双语字幕叠加层 — 放在 TransitionSeries 外面，基于全局帧数
+ *
+ * 样式：一个半透明底，中文在上英文在下，大小一致，中间分隔线
+ */
+const Subtitle: React.FC<{
+	sentences: Array<{text: string; en: string; start: number; end: number}>;
+}> = ({sentences}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
+	const ms = (frame / fps) * 1000;
 
-	/** 截图淡入 */
-	const imgOpacity = interpolate(frame, [0, fps * 0.5], [0, 1], {
+	const active = sentences.find(
+		(s) => ms >= s.start && ms <= s.end + 200,
+	);
+	if (!active) return null;
+
+	const progress = Math.min(1, (ms - active.start) / 200);
+	const opacity = interpolate(progress, [0, 1], [0, 1], {
 		extrapolateLeft: 'clamp',
 		extrapolateRight: 'clamp',
 	});
 
-	/** 底部文字延迟出现 */
-	const textOpacity = interpolate(
-		frame - fps * 1.0,
-		[0, fps * 0.5],
-		[0, 1],
-		{extrapolateLeft: 'clamp', extrapolateRight: 'clamp'},
-	);
-
 	return (
-		<AbsoluteFill style={{backgroundColor: '#000'}}>
-			{/* 聊天截图居中展示 */}
-			<AbsoluteFill
+		<div
+			style={{
+				position: 'absolute',
+				bottom: 60,
+				left: '50%',
+				transform: 'translateX(-50%)',
+				opacity,
+				textAlign: 'center',
+				zIndex: 999,
+				pointerEvents: 'none',
+			}}
+		>
+			<div
 				style={{
-					display: 'flex',
+					display: 'inline-flex',
+					flexDirection: 'column',
 					alignItems: 'center',
-					justifyContent: 'center',
-					opacity: imgOpacity,
+					backgroundColor: 'rgba(0,0,0,0.6)',
+					borderRadius: 12,
+					padding: '12px 32px 10px',
+					gap: 8,
 				}}
 			>
-				<img
-					src={CHAT_IMG_1}
+				<span
 					style={{
-						maxWidth: '90%',
-						maxHeight: '85%',
-						objectFit: 'contain',
-						borderRadius: 12,
-						boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-					}}
-				/>
-			</AbsoluteFill>
-
-			{/* 底部渐变遮罩 + 文字 */}
-			<AbsoluteFill
-				style={{
-					background:
-						'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 100%)',
-					display: 'flex',
-					alignItems: 'flex-end',
-					padding: '50px 80px',
-					boxSizing: 'border-box',
-				}}
-			>
-				<p
-					style={{
-						fontSize: 38,
-						lineHeight: 1.8,
-						color: '#ffffff',
-						fontFamily: darkTheme.fontFamily,
-						margin: 0,
-						opacity: textOpacity,
+						fontFamily: C.font,
+						fontSize: 32,
+						color: 'white',
+						lineHeight: 1.4,
 					}}
 				>
-					一位群友说，他们之前字体流量一个月花了两万多块钱。
-					中文字体动辄几十上百 MB，用户量一多，流量账单就炸了。
-				</p>
-			</AbsoluteFill>
-		</AbsoluteFill>
+					{active.text}
+				</span>
+				{/* 分隔线 */}
+				<div
+					style={{
+						width: '60%',
+						height: 1,
+						backgroundColor: 'rgba(255,255,255,0.25)',
+					}}
+				/>
+				<span
+					style={{
+						fontFamily: C.font,
+						fontSize: 28,
+						color: 'rgba(255,255,255,0.75)',
+						lineHeight: 1.4,
+					}}
+				>
+					{active.en}
+				</span>
+			</div>
+		</div>
 	);
 };
 
-/** Segment 3: 方案介绍 — 左图右文 (6秒) */
-const Segment3Solution: React.FC = () => {
+/** 聊天气泡 */
+const ChatBubble: React.FC<{
+	/** 消息文本 */
+	text: string;
+	/** 是否自己发的（右对齐蓝色） */
+	isSelf: boolean;
+	/** 延迟帧 */
+	delay: number;
+	/** 发送者名称 */
+	sender?: string;
+}> = ({text, isSelf, delay, sender}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
 
-	/** 卖点逐条出现 */
-	const item1Progress = spring({
-		frame: frame - fps * 0.5,
+	const progress = spring({
+		frame: frame - delay,
 		fps,
-		config: {damping: 15},
-		durationInFrames: fps * 0.4,
+		config: {damping: 200},
 	});
-	const item1Y = interpolate(item1Progress, [0, 1], [30, 0]);
 
-	const item2Progress = spring({
-		frame: frame - fps * 1.5,
-		fps,
-		config: {damping: 15},
-		durationInFrames: fps * 0.4,
-	});
-	const item2Y = interpolate(item2Progress, [0, 1], [30, 0]);
-
-	const item3Progress = spring({
-		frame: frame - fps * 2.5,
-		fps,
-		config: {damping: 15},
-		durationInFrames: fps * 0.4,
-	});
-	const item3Y = interpolate(item3Progress, [0, 1], [30, 0]);
+	const translateY = interpolate(progress, [0, 1], [40, 0]);
 
 	return (
-		<AbsoluteFill style={{display: 'flex', flexDirection: 'row'}}>
-			{/* 左侧：聊天截图 */}
+		<div
+			style={{
+				display: 'flex',
+				flexDirection: isSelf ? 'row-reverse' : 'row',
+				alignItems: 'flex-start',
+				gap: 12,
+				opacity: progress,
+				transform: `translateY(${translateY}px)`,
+				padding: '0 60px',
+			}}
+		>
+			{/* 头像 */}
 			<div
 				style={{
-					flex: 0.55,
+					width: 40,
+					height: 40,
+					borderRadius: '50%',
+					backgroundColor: isSelf ? C.accent : '#475569',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					backgroundColor: '#111',
-					position: 'relative',
+					fontSize: 16,
+					color: 'white',
+					fontFamily: C.font,
+					flexShrink: 0,
 				}}
 			>
-				<img
-					src={CHAT_IMG_2}
+				{isSelf ? '崮' : sender?.[0] ?? '友'}
+			</div>
+
+			{/* 气泡 */}
+			<div
+				style={{
+					backgroundColor: isSelf
+						? 'rgba(99, 102, 241, 0.15)'
+						: 'rgba(255, 255, 255, 0.06)',
+					border: `1px solid ${isSelf ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+					borderRadius: 16,
+					padding: '12px 20px',
+					maxWidth: '60%',
+					backdropFilter: 'blur(10px)',
+				}}
+			>
+				{sender && !isSelf && (
+					<div
+						style={{
+							fontSize: 14,
+							color: C.secondary,
+							marginBottom: 4,
+							fontFamily: C.font,
+						}}
+					>
+						{sender}
+					</div>
+				)}
+				<span
 					style={{
-						maxWidth: '92%',
-						maxHeight: '88%',
-						objectFit: 'contain',
-						borderRadius: 8,
+						fontSize: 22,
+						color: C.primary,
+						lineHeight: 1.5,
+						fontFamily: C.font,
 					}}
+				>
+					{text}
+				</span>
+			</div>
+		</div>
+	);
+};
+
+/** 大数字计数 */
+const StatCounter: React.FC<{
+	/** 目标数字 */
+	target: number;
+	/** 前缀 */
+	prefix?: string;
+	/** 后缀 */
+	suffix?: string;
+	/** 描述 */
+	description: string;
+	/** 延迟帧 */
+	delay: number;
+}> = ({target, prefix = '', suffix = '', description, delay}) => {
+	const frame = useCurrentFrame();
+	const {fps} = useVideoConfig();
+
+	const progress = spring({
+		frame: frame - delay,
+		fps,
+		config: {damping: 200},
+	});
+
+	const countValue = interpolate(progress, [0, 1], [0, target], {
+		extrapolateRight: 'clamp',
+	});
+
+	return (
+		<div
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				opacity: progress,
+				transform: `scale(${progress})`,
+			}}
+		>
+			<span
+				style={{
+					fontSize: 120,
+					fontWeight: 800,
+					color: C.warning,
+					fontFamily: C.font,
+					fontVariantNumeric: 'tabular-nums',
+					letterSpacing: -2,
+				}}
+			>
+				{prefix}
+				{Math.round(countValue).toLocaleString()}
+				{suffix}
+			</span>
+			<span
+				style={{
+					fontSize: 36,
+					color: C.secondary,
+					marginTop: 16,
+					fontFamily: C.font,
+				}}
+			>
+				{description}
+			</span>
+		</div>
+	);
+};
+
+/** 关键词标签 */
+const PillBadge: React.FC<{
+	/** 标签文字 */
+	text: string;
+	/** 延迟帧 */
+	delay: number;
+	/** 颜色 */
+	color?: string;
+}> = ({text, delay, color}) => {
+	const frame = useCurrentFrame();
+	const {fps} = useVideoConfig();
+	const c = color ?? C.accent;
+
+	const progress = spring({
+		frame: frame - delay,
+		fps,
+		config: {damping: 200},
+	});
+
+	return (
+		<span
+			style={{
+				display: 'inline-block',
+				fontSize: 24,
+				color: c,
+				backgroundColor: `${c}18`,
+				border: `1px solid ${c}40`,
+				borderRadius: 999,
+				padding: '8px 24px',
+				fontFamily: C.font,
+				opacity: progress,
+				transform: `scale(${interpolate(progress, [0, 1], [0.5, 1])})`,
+			}}
+		>
+			{text}
+		</span>
+	);
+};
+
+/** Glassmorphism 特性卡片 */
+const FeatureCard: React.FC<{
+	/** 图标 emoji */
+	icon: string;
+	/** 标题 */
+	title: string;
+	/** 描述 */
+	desc: string;
+	/** 延迟帧 */
+	delay: number;
+}> = ({icon, title, desc, delay}) => {
+	const frame = useCurrentFrame();
+	const {fps} = useVideoConfig();
+
+	const progress = spring({
+		frame: frame - delay,
+		fps,
+		config: {damping: 200},
+	});
+
+	const translateY = interpolate(progress, [0, 1], [30, 0]);
+
+	return (
+		<div
+			style={{
+				backgroundColor: C.cardBg,
+				border: `1px solid ${C.cardBorder}`,
+				borderRadius: 16,
+				padding: '28px 32px',
+				opacity: progress,
+				transform: `translateY(${translateY}px)`,
+				backdropFilter: 'blur(10px)',
+			}}
+		>
+			<div style={{fontSize: 36, marginBottom: 12}}>{icon}</div>
+			<div
+				style={{
+					fontSize: 24,
+					fontWeight: 600,
+					color: C.primary,
+					marginBottom: 8,
+					fontFamily: C.font,
+				}}
+			>
+				{title}
+			</div>
+			<div
+				style={{
+					fontSize: 18,
+					color: C.secondary,
+					lineHeight: 1.5,
+					fontFamily: C.font,
+				}}
+			>
+				{desc}
+			</div>
+		</div>
+	);
+};
+
+/** URL 展示 */
+const UrlDisplay: React.FC<{url: string; delay: number}> = ({url, delay}) => {
+	const frame = useCurrentFrame();
+	const {fps} = useVideoConfig();
+
+	const progress = spring({
+		frame: frame - delay,
+		fps,
+		config: {damping: 200},
+	});
+
+	return (
+		<div
+			style={{
+				backgroundColor: 'rgba(255, 255, 255, 0.08)',
+				border: '1px solid rgba(255, 255, 255, 0.15)',
+				borderRadius: 16,
+				padding: '20px 48px',
+				opacity: progress,
+				transform: `scale(${interpolate(progress, [0, 1], [0.9, 1])})`,
+				backdropFilter: 'blur(10px)',
+			}}
+		>
+			<span
+				style={{
+					fontSize: 40,
+					color: C.accent,
+					fontFamily: C.font,
+					letterSpacing: 1,
+				}}
+			>
+				{url}
+			</span>
+		</div>
+	);
+};
+
+/** 标题文字（spring 入场） */
+const TitleText: React.FC<{
+	/** 主标题 */
+	text: string;
+	/** 副标题 */
+	subtitle?: string;
+	/** 延迟帧 */
+	delay: number;
+}> = ({text, subtitle, delay}) => {
+	const frame = useCurrentFrame();
+	const {fps} = useVideoConfig();
+
+	const progress = spring({
+		frame: frame - delay,
+		fps,
+		config: {damping: 200},
+	});
+
+	const translateY = interpolate(progress, [0, 1], [40, 0]);
+
+	const subtitleProgress = spring({
+		frame: frame - delay - fps * 0.3,
+		fps,
+		config: {damping: 200},
+	});
+
+	return (
+		<div
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				gap: 16,
+			}}
+		>
+			<h1
+				style={{
+					fontSize: 64,
+					fontWeight: 800,
+					color: C.primary,
+					fontFamily: C.font,
+					textAlign: 'center',
+					margin: 0,
+					opacity: progress,
+					transform: `translateY(${translateY}px)`,
+				}}
+			>
+				{text}
+			</h1>
+			{subtitle && (
+				<p
+					style={{
+						fontSize: 32,
+						color: C.secondary,
+						fontFamily: C.font,
+						margin: 0,
+						opacity: subtitleProgress,
+						textAlign: 'center',
+					}}
+				>
+					{subtitle}
+				</p>
+			)}
+		</div>
+	);
+};
+
+// ========== 场景组件（纯视觉，不含 Audio 和 Subtitle） ==========
+
+/** 场景1: 标题卡 */
+const Scene1Title: React.FC = () => (
+	<AbsoluteFill>
+		<AbsoluteFill
+			style={{
+				background: `linear-gradient(135deg, ${C.grad1[0]} 0%, ${C.grad1[1]} 100%)`,
+			}}
+		/>
+		<AbsoluteFill
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				justifyContent: 'center',
+				padding: '150px 120px 170px',
+				boxSizing: 'border-box',
+			}}
+		>
+			<PillBadge text="开源项目分享" delay={FPS * 0.3} />
+			<div style={{height: 32}} />
+			<TitleText
+				text="群友不知道我的开源项目"
+				subtitle="白花两万多流量费用"
+				delay={FPS * 0.6}
+			/>
+		</AbsoluteFill>
+	</AbsoluteFill>
+);
+
+/** 场景2: 聊天气泡流 — 群友讲述问题 */
+const Scene2Pain: React.FC = () => (
+	<AbsoluteFill>
+		<AbsoluteFill
+			style={{
+				background: `linear-gradient(135deg, ${C.grad2[0]} 0%, ${C.grad2[1]} 100%)`,
+			}}
+		/>
+		<AbsoluteFill
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				justifyContent: 'center',
+				gap: 24,
+				padding: '150px 0 170px',
+			}}
+		>
+			<ChatBubble
+				text="我们之前字体一个月流量搞了两万多块钱 😱"
+				isSelf={false}
+				sender="群友"
+				delay={FPS * 0.3}
+			/>
+			<ChatBubble
+				text="？！你们全量加载中文字体了？"
+				isSelf={true}
+				delay={FPS * 1.5}
+			/>
+			<ChatBubble
+				text="对，一个中文字体几十兆，多则数百兆"
+				isSelf={false}
+				sender="群友"
+				delay={FPS * 2.5}
+			/>
+			<ChatBubble
+				text="1GB 流量将近五六毛钱，用户量一多账单就炸了"
+				isSelf={false}
+				sender="群友"
+				delay={FPS * 4}
+			/>
+			<ChatBubble
+				text="为什么不裁剪字体呢？"
+				isSelf={true}
+				delay={FPS * 5.5}
+			/>
+		</AbsoluteFill>
+	</AbsoluteFill>
+);
+
+/** 场景3: 大数字 ¥20,000+ */
+const Scene3Stat: React.FC = () => (
+	<AbsoluteFill>
+		<AbsoluteFill
+			style={{
+				background: `linear-gradient(135deg, ${C.grad2[0]} 0%, ${C.grad2[1]} 100%)`,
+			}}
+		/>
+		<AbsoluteFill
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				justifyContent: 'center',
+				padding: '150px 120px 170px',
+				boxSizing: 'border-box',
+			}}
+		>
+			<StatCounter
+				target={20000}
+				prefix="¥"
+				suffix="+"
+				description="每月字体流量费用"
+				delay={FPS * 0.3}
+			/>
+			<div style={{height: 48}} />
+			<PillBadge
+				text="中文字体 = 几十 MB × 用户数"
+				delay={FPS * 1.5}
+				color={C.secondary}
+			/>
+		</AbsoluteFill>
+	</AbsoluteFill>
+);
+
+/** 场景4: 推荐 webfont — 聊天气泡 + 特性卡片 */
+const Scene4Solution: React.FC = () => (
+	<AbsoluteFill>
+		<AbsoluteFill
+			style={{
+				background: `linear-gradient(135deg, ${C.grad2[0]} 0%, ${C.grad2[1]} 100%)`,
+			}}
+		/>
+		<AbsoluteFill
+			style={{
+				display: 'flex',
+				flexDirection: 'row',
+				padding: '150px 60px 170px',
+				boxSizing: 'border-box',
+				gap: 48,
+			}}
+		>
+			{/* 左侧：聊天气泡 */}
+			<div
+				style={{
+					flex: 1,
+					display: 'flex',
+					flexDirection: 'column',
+					justifyContent: 'center',
+					gap: 20,
+				}}
+			>
+				<ChatBubble
+					text="动态化字体子集，毫秒级裁剪速度"
+					isSelf={true}
+					delay={FPS * 0.3}
+				/>
+				<ChatBubble
+					text="这个相当奈斯！"
+					isSelf={false}
+					sender="群友"
+					delay={FPS * 2}
+				/>
+				<ChatBubble
+					text="早用上就省钱了，好看的字体也能用上"
+					isSelf={true}
+					delay={FPS * 3.5}
 				/>
 			</div>
 
-			{/* 右侧：核心卖点 */}
-			<GradientBackground colors={['#1a1a2e', '#16213e']}>
-				<div
-					style={{
-						display: 'flex',
-						flexDirection: 'column',
-						justifyContent: 'center',
-						padding: '50px 60px',
-						height: '100%',
-						boxSizing: 'border-box',
-						gap: 32,
-					}}
-				>
-					<div
-						style={{
-							opacity: item1Progress,
-							transform: `translateY(${item1Y}px)`,
-						}}
-					>
-						<h2
-							style={{
-								fontSize: 34,
-								color: '#60a5fa',
-								fontFamily: darkTheme.fontFamily,
-								margin: '0 0 8px 0',
-							}}
-						>
-							⚡ 毫秒级裁剪
-						</h2>
-						<p
-							style={{
-								fontSize: 24,
-								color: '#d4d4d4',
-								fontFamily: darkTheme.fontFamily,
-								margin: 0,
-								lineHeight: 1.6,
-							}}
-						>
-							动态字体子集化，只加载用到的字符，大幅缩减文件体积
-						</p>
-					</div>
-
-					<div
-						style={{
-							opacity: item2Progress,
-							transform: `translateY(${item2Y}px)`,
-						}}
-					>
-						<h2
-							style={{
-								fontSize: 34,
-								color: '#34d399',
-								fontFamily: darkTheme.fontFamily,
-								margin: '0 0 8px 0',
-							}}
-						>
-							📦 多格式支持
-						</h2>
-						<p
-							style={{
-								fontSize: 24,
-								color: '#d4d4d4',
-								fontFamily: darkTheme.fontFamily,
-								margin: 0,
-								lineHeight: 1.6,
-							}}
-						>
-							支持 TTF 和 WOFF2 格式，兼容各种使用场景
-						</p>
-					</div>
-
-					<div
-						style={{
-							opacity: item3Progress,
-							transform: `translateY(${item3Y}px)`,
-						}}
-					>
-						<h2
-							style={{
-								fontSize: 34,
-								color: '#f59e0b',
-								fontFamily: darkTheme.fontFamily,
-								margin: '0 0 8px 0',
-							}}
-						>
-							🏆 2020 年阮一峰推荐
-						</h2>
-						<p
-							style={{
-								fontSize: 24,
-								color: '#d4d4d4',
-								fontFamily: darkTheme.fontFamily,
-								margin: 0,
-								lineHeight: 1.6,
-							}}
-						>
-							开源项目，已服务大量用户，稳定可靠
-						</p>
-					</div>
-				</div>
-			</GradientBackground>
-		</AbsoluteFill>
-	);
-};
-
-/** Segment 4: 行动号召 — 网址 + 关键数据 (4秒) */
-const Segment4CTA: React.FC = () => {
-	const frame = useCurrentFrame();
-	const {fps} = useVideoConfig();
-
-	/** 网址弹入 */
-	const urlProgress = spring({
-		frame,
-		fps,
-		config: {damping: 12, mass: 0.8},
-		durationInFrames: fps * 0.6,
-	});
-	const urlScale = interpolate(urlProgress, [0, 1], [0.8, 1]);
-
-	/** 副文字延迟 */
-	const subOpacity = interpolate(
-		frame - fps * 0.5,
-		[0, fps * 0.4],
-		[0, 1],
-		{extrapolateLeft: 'clamp', extrapolateRight: 'clamp'},
-	);
-
-	return (
-		<GradientBackground colors={['#0f0c29', '#302b63', '#24243e']} animated>
-			<AbsoluteFill
+			{/* 右侧：特性卡片 */}
+			<div
 				style={{
+					flex: 1,
 					display: 'flex',
 					flexDirection: 'column',
-					alignItems: 'center',
 					justifyContent: 'center',
-					gap: 24,
+					gap: 16,
 				}}
 			>
-				<p
-					style={{
-						fontSize: 28,
-						color: 'rgba(255,255,255,0.6)',
-						fontFamily: darkTheme.fontFamily,
-						margin: 0,
-						opacity: subOpacity,
-					}}
-				>
-					早用上就省下两万块了
-				</p>
+				<FeatureCard
+					icon="⚡"
+					title="毫秒级裁剪速度"
+					desc="Node.js 运行时字体子集化"
+					delay={FPS * 1}
+				/>
+				<FeatureCard
+					icon="📦"
+					title="增量加载字体"
+					desc="只加载用到的字符，大幅减少流量"
+					delay={FPS * 2}
+				/>
+				<FeatureCard
+					icon="🔧"
+					title="TTF & WOFF2"
+					desc="支持主流字体格式"
+					delay={FPS * 3}
+				/>
+			</div>
+		</AbsoluteFill>
+	</AbsoluteFill>
+);
 
-				<p
-					style={{
-						fontSize: 64,
-						fontWeight: 'bold',
-						color: '#60a5fa',
-						fontFamily: darkTheme.fontFamily,
-						margin: 0,
-						transform: `scale(${urlScale})`,
-						opacity: urlProgress,
-						letterSpacing: 1,
-					}}
-				>
-					webfont.shenzilong.cn
-				</p>
+/** 场景5: 阮一峰期刊 + 裁剪效果对比 */
+const Scene5Credibility: React.FC = () => (
+	<AbsoluteFill>
+		<AbsoluteFill
+			style={{
+				background: `linear-gradient(135deg, ${C.grad1[0]} 0%, ${C.grad1[1]} 100%)`,
+			}}
+		/>
+		<AbsoluteFill
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				justifyContent: 'center',
+				padding: '150px 120px 170px',
+				boxSizing: 'border-box',
+			}}
+		>
+			<PillBadge
+				text="2020 年登上阮一峰周刊第 100 期"
+				delay={FPS * 0.3}
+				color={C.success}
+			/>
+			<div style={{height: 40}} />
+			<TitleText
+				text="开源界最好的字体裁剪方案"
+				subtitle="不只是国内最好，是整个开源界"
+				delay={FPS * 1}
+			/>
+			<div style={{height: 48}} />
+			{/* 裁剪效果数字对比 */}
+			<div style={{display: 'flex', gap: 48, alignItems: 'center'}}>
+				<div style={{textAlign: 'center'}}>
+					<div
+						style={{
+							fontSize: 56,
+							fontWeight: 800,
+							color: C.warning,
+							fontFamily: C.font,
+							fontVariantNumeric: 'tabular-nums',
+						}}
+					>
+						~50MB
+					</div>
+					<div
+						style={{
+							fontSize: 20,
+							color: C.secondary,
+							fontFamily: C.font,
+						}}
+					>
+						原始中文字体
+					</div>
+				</div>
+				<div style={{fontSize: 48, color: C.secondary}}>→</div>
+				<div style={{textAlign: 'center'}}>
+					<div
+						style={{
+							fontSize: 56,
+							fontWeight: 800,
+							color: C.success,
+							fontFamily: C.font,
+							fontVariantNumeric: 'tabular-nums',
+						}}
+					>
+						~KB 级
+					</div>
+					<div
+						style={{
+							fontSize: 20,
+							color: C.secondary,
+							fontFamily: C.font,
+						}}
+					>
+						裁剪后（仅需要的字）
+					</div>
+				</div>
+			</div>
+		</AbsoluteFill>
+	</AbsoluteFill>
+);
 
-				<p
-					style={{
-						fontSize: 26,
-						color: 'rgba(255,255,255,0.5)',
-						fontFamily: darkTheme.fontFamily,
-						margin: 0,
-						opacity: subOpacity,
-					}}
-				>
-					动态化字体子集，毫秒级裁剪，完全开源
-				</p>
-			</AbsoluteFill>
-		</GradientBackground>
-	);
-};
+/** 场景6: 结尾 — URL + 号召 */
+const Scene6CTA: React.FC = () => (
+	<AbsoluteFill>
+		<AbsoluteFill
+			style={{
+				background: `linear-gradient(135deg, ${C.grad3[0]} 0%, ${C.grad3[1]} 100%)`,
+			}}
+		/>
+		<AbsoluteFill
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				justifyContent: 'center',
+				padding: '150px 120px 170px',
+				boxSizing: 'border-box',
+				gap: 40,
+			}}
+		>
+			<TitleText text="试试看？" delay={FPS * 0.3} />
+			<UrlDisplay url="webfont.shenzilong.cn" delay={FPS * 1} />
+			<PillBadge
+				text="✨ 开源免费 · 毫秒级速度 · TTF & WOFF2"
+				delay={FPS * 2}
+				color={C.success}
+			/>
+		</AbsoluteFill>
+	</AbsoluteFill>
+);
 
-// ========== 完整视频组合 ==========
+// ========== 主组件 ==========
 
-/**
- * webfont 开源项目宣传视频
- *
- * 4 个段落，fade/slide 过渡
- */
 export const VideoWebfont: React.FC = () => {
 	loadNotoSansSC();
 	const {fps} = useVideoConfig();
 
 	return (
 		<ThemeProvider theme={darkTheme}>
-			<AbsoluteFill>
+			<AbsoluteFill style={{backgroundColor: C.background}}>
+				{/* ★ 音频轨道 — 放在 TransitionSeries 外面，用 Sequence 指定全局时间区间 */}
+				{AUDIO_TRACKS.map((track, i) => (
+					<Sequence
+						key={i}
+						from={track.startFrame}
+						durationInFrames={track.durationFrames}
+					>
+						<Audio src={track.src} volume={track.volume} />
+					</Sequence>
+				))}
+
+				{/* ★ 字幕 — 也在外面，基于全局帧数 */}
+				<Subtitle sentences={SUBS} />
+
+				{/* 视觉场景 */}
 				<TransitionSeries>
-					{/* Segment 1: 标题卡片 4秒 */}
-					<TransitionSeries.Sequence durationInFrames={fps * 4}>
-						<Segment1Title />
+					<TransitionSeries.Sequence durationInFrames={fps * S1_SEC}>
+						<Scene1Title />
 					</TransitionSeries.Sequence>
 
-					{/* 过渡: fade */}
 					<TransitionSeries.Transition
-						timing={linearTiming({durationInFrames: 15})}
+						timing={linearTiming({durationInFrames: TRANSITION_FRAMES})}
 						presentation={fade()}
 					/>
 
-					{/* Segment 2: 痛点展示 6秒 */}
-					<TransitionSeries.Sequence durationInFrames={fps * 6}>
-						<Segment2Pain />
+					<TransitionSeries.Sequence durationInFrames={fps * S2_SEC}>
+						<Scene2Pain />
 					</TransitionSeries.Sequence>
 
-					{/* 过渡: slide */}
 					<TransitionSeries.Transition
-						timing={linearTiming({durationInFrames: 15})}
-						presentation={slide()}
-					/>
-
-					{/* Segment 3: 方案介绍 6秒 */}
-					<TransitionSeries.Sequence durationInFrames={fps * 6}>
-						<Segment3Solution />
-					</TransitionSeries.Sequence>
-
-					{/* 过渡: fade */}
-					<TransitionSeries.Transition
-						timing={linearTiming({durationInFrames: 15})}
+						timing={linearTiming({durationInFrames: TRANSITION_FRAMES})}
 						presentation={fade()}
 					/>
 
-					{/* Segment 4: 行动号召 4秒 */}
-					<TransitionSeries.Sequence durationInFrames={fps * 4}>
-						<Segment4CTA />
+					<TransitionSeries.Sequence durationInFrames={fps * S3_SEC}>
+						<Scene3Stat />
+					</TransitionSeries.Sequence>
+
+					<TransitionSeries.Transition
+						timing={linearTiming({durationInFrames: TRANSITION_FRAMES})}
+						presentation={fade()}
+					/>
+
+					<TransitionSeries.Sequence durationInFrames={fps * S4_SEC}>
+						<Scene4Solution />
+					</TransitionSeries.Sequence>
+
+					<TransitionSeries.Transition
+						timing={linearTiming({durationInFrames: TRANSITION_FRAMES})}
+						presentation={fade()}
+					/>
+
+					<TransitionSeries.Sequence durationInFrames={fps * S5_SEC}>
+						<Scene5Credibility />
+					</TransitionSeries.Sequence>
+
+					<TransitionSeries.Transition
+						timing={linearTiming({durationInFrames: TRANSITION_FRAMES})}
+						presentation={fade()}
+					/>
+
+					<TransitionSeries.Sequence durationInFrames={fps * S6_SEC}>
+						<Scene6CTA />
 					</TransitionSeries.Sequence>
 				</TransitionSeries>
 			</AbsoluteFill>
 		</ThemeProvider>
 	);
 };
-
-/** 总时长 = 4+6+6+4 = 20秒，减去 3×15帧过渡 = 20*24-45 = 435帧 */
-export const VIDEO_WEBFONT_DURATION = 20 * 24 - 45;

@@ -12,6 +12,121 @@
 - **Google Fonts** — Noto Sans SC 中文字体（@remotion/google-fonts）
 - 思源笔记数据通过 **SQL API** 获取，数据格式是 **kramdown**（不是 HTML）
 
+---
+
+## 🎨 视觉设计风格指南
+
+### 核心风格：Dark Mode + Glassmorphism
+
+所有视频默认使用**暗黑毛玻璃风**，这是技术类短视频最主流的视觉风格（参考 Fireship、Kurzgesagt）。
+
+#### 配色方案
+
+```typescript
+/** 默认主题色 — 所有视频以此为基础 */
+const theme = {
+  /** 纯黑背景，不要用深灰 */
+  background: '#0a0a0a',
+  /** 毛玻璃卡片：半透明白 + 模糊 + 细边框 */
+  cardBg: 'rgba(255, 255, 255, 0.05)',
+  cardBorder: 'rgba(255, 255, 255, 0.1)',
+  cardBlur: 'blur(10px)',
+  /** 文字层级 */
+  primaryText: '#ffffff',
+  secondaryText: '#94a3b8',
+  tertiaryText: '#64748b',
+  /** 强调色 */
+  accent: '#6366f1',     // Indigo — 主强调
+  success: '#22c55e',    // Green — 正面数据
+  warning: '#f59e0b',    // Amber — 金额/警示
+};
+```
+
+#### 渐变色速查（背景用）
+
+| 名称 | 色值 | 适用场景 |
+|------|------|---------|
+| Plum Plate | `#667eea` → `#764ba2` | 通用科技感 |
+| Eternal Constance | `#09203f` → `#537895` | 沉稳深蓝 |
+| Night Sky | `#1e3c72` → `#2a5298` | 专业/商务 |
+| Sharp Blues | `#00c6fb` → `#005bea` | 轻快科技 |
+| Night Party | `#0250c5` → `#d43f8d` | 活力撞色 |
+| Deep Blue | `#6a11cb` → `#2575fc` | 深邃紫蓝 |
+
+更多渐变参考 [WebGradients](https://webgradients.com/)。
+
+#### 动画规范
+
+```typescript
+/**
+ * ★ 入场动画标准 — 所有元素入场都用 spring，不用线性动画
+ *
+ * damping: 200 — 标题/数字/卡片（干脆利落）
+ * damping: 15  — 光标/模拟操作（自然拟人感）
+ */
+const scale = spring({
+  frame: frame - delay,
+  fps,
+  config: { damping: 200 },
+});
+
+/**
+ * ★ Stagger（交错入场）— 相关元素错开 8-12 帧依次入场
+ */
+items.map((item, i) => {
+  const itemProgress = spring({
+    frame: frame - (delay + i * 10),
+    fps,
+    config: { damping: 200 },
+  });
+  // ...
+});
+```
+
+```typescript
+/**
+ * ★ 数字计数动画 — 统计/金额/百分比必须用计数动画
+ */
+const count = interpolate(frame, [0, duration], [0, targetValue], {
+  extrapolateRight: 'clamp',
+});
+// 搭配 font-variant-numeric: tabular-nums 防止数字跳动
+```
+
+#### 安全区规范
+
+- 上边距：150px
+- 下边距：170px（给字幕留空间）
+- 侧边距：60px
+- 最小字号：28px
+
+#### 布局模式速查
+
+| 模式 | 适用场景 | 关键实现 |
+|------|---------|---------|
+| 全屏标题卡 | 章节封面/开场 | 渐变背景 + 居中大标题 + 关键词 pill 标签 |
+| 左右分屏 | 截图 + 解说 | 截图用圆角+阴影模拟屏幕边框，文字侧逐条 slide-in |
+| 聊天气泡流 | 聊天记录展示 | 圆角 16px，白/灰背景，逐条 slide-up+fade-in，间隔 15-20 帧 |
+| 数据仪表盘 | 统计/对比/金额 | glassmorphism 卡片 + 大数字计数 + 条形图 |
+| 居中大数字 | 核心数据强调 | 超大字号（120px+）+ 计数动画 + 描述文字 |
+
+#### 聊天截图展示技巧
+
+- 不要直接贴原始截图！用 **聊天气泡流** 重新演绎对话内容
+- 气泡样式：圆角 16px，白色背景（发言者）/ 浅灰背景（其他人）
+- 每条消息间隔 15-20 帧 slide-up 入场
+- 右对齐 = 自己发言，左对齐 = 他人发言
+- 头像用圆形占位（或彩色首字母圆）
+
+#### 截图展示技巧
+
+- 加圆角 12px + 阴影 `0 20px 60px rgba(0,0,0,0.5)` 模拟屏幕浮层
+- 截图宽度 700-900px，不要占满画面
+- 搭配深色渐变背景，截图自然凸显
+- 用 slide-in 入场动画（从右滑入 200px → 居中）
+
+---
+
 ## 项目结构
 
 ```
@@ -21,6 +136,7 @@ src/
     kramdown-parser.ts kramdown 解析（提取文本/图片/音频/配置）
     block-types.ts     SiYuanBlockType 枚举 + parseSuperBlockLayout
     types.ts           ParsedBlock, SegmentPlan, Sy2VideoConfig 等核心类型
+    probe.ts           ★ 统一资源探测 probeDocument() — 一次调用获取全文+图片+音频+视频
   blocks/              块渲染组件（按思源块类型分发）
     BlockRenderer.tsx  统一分发器（根据 block.type 选择组件）
     ParagraphBlock.tsx, HeadingBlock.tsx, ImageBlock.tsx, VideoBlock.tsx,
@@ -38,6 +154,10 @@ src/
     SegmentComposition.tsx  分段渲染（BlockRenderer 渲染子块）
     transitions.ts     过渡类型定义 (fade/slide/wipe/none)
     schemas.ts         Zod schema
+  asr/                ★ 语音旁白管道（FunASR 转写 + FFmpeg 清洗）
+    funasr-client.ts   FunASR WebSocket 客户端（离线转写 + 时间戳）
+    audio-utils.ts     音频工具（静音检测/口癖检测/裁剪拼接）
+    index.ts           一站式 API：processNarration()
   metadata/            元数据计算
     calculateArticleMetadata.ts  SQL 查询 → 构建 ParsedBlock 树 → 计算时长
     audio-utils.ts     音频时长计算（带超时）
@@ -51,141 +171,75 @@ src/
   webpack-override.ts  Rspack/Webpack 配置覆盖
 ```
 
-## AI 可用组件工具箱
-
-生成视频时，可以直接 import 这些组件和工具：
-
-### 思源数据层
-
-```typescript
-import {siyuanClient} from './siyuan/client';
-// siyuanClient.queryBlocks(sql)          — SQL 查询 blocks 表
-// siyuanClient.getDocBlocks(docId)       — 获取文档所有块
-// siyuanClient.assetUrl(path)            — 资源文件完整 URL
-
-import {parseKramdownBlock, stripInlineMarkdown, parseHeading, extractAssets} from './siyuan/kramdown-parser';
-import {SiYuanBlockType} from './siyuan/block-types';
-```
-
-### 图片读取（siyuan-notes skill）
-
-```bash
-# 1. 找出文档中所有含图片的子块
-node -e "const s = require('/home/gs/.claude/skills/siyuan-notes/index.js'); (async () => {
-  const blocks = await s.executeSiyuanQuery(\"SELECT id, markdown, type FROM blocks WHERE root_id='文档ID' ORDER BY id\");
-  for (const b of blocks) {
-    const md = b.markdown || '';
-    if (md.includes('![')) {
-      const assets = await s.extractAssetsFromBlock(b.id);
-      console.log('Block:', b.id, 'Assets:', JSON.stringify(assets));
-    }
-  }
-})();"
-
-# 2. 通过代理下载图片（必须走代理，直连思源会超时）
-curl -s -o /tmp/img1.webp "http://localhost:6899/assets/image-xxx.webp"
-
-# 3. 用 Read 工具读取下载的图片文件，AI 会看到图片内容并分析
-# Read /tmp/img1.webp
-```
-
-> **⚠️ 注意事项**：
-> - `extractAssetsFromBlock` 只对子块有效，不对文档块（doc 类型）本身
-> - 必须通过代理 `http://localhost:6899/assets/` 下载资源，直连思源会连接超时
-> - 代理路径格式：`http://localhost:6899/assets/<文件名>`，不带 `/api/` 前缀
-
-### 块渲染组件
-
-```typescript
-import {BlockRenderer} from './blocks/BlockRenderer';
-// 根据块的 type 自动选择对应组件渲染，支持所有思源块类型
-
-import {ParagraphBlock} from './blocks/ParagraphBlock';
-import {HeadingBlock} from './blocks/HeadingBlock';
-import {ImageBlock} from './blocks/ImageBlock';
-// ... 等等，每个块组件接受 BlockProps {block, durationInFrames, animation?}
-```
-
-### 主题系统
-
-```typescript
-import {useTheme} from './theme/context';
-// const theme = useTheme() → 获取当前主题的颜色/字号/间距配置
-
-import {ThemeProvider} from './theme/context';
-import {loadNotoSansSC} from './theme/fonts';
-import {lightTheme, darkTheme} from './theme/presets';
-```
-
-### 动画预设
-
-```typescript
-import {useAnimationStyle} from './animations/presets';
-// const style = useAnimationStyle('fadeIn') → 返回 {opacity: ...} CSS 对象
-// 可选: 'fadeIn' | 'slideInLeft' | 'slideInRight' | 'slideInUp' | 'scaleIn' | 'none'
-```
-
-### 过渡效果
-
-```typescript
-import {TransitionSeries} from '@remotion/transitions';
-import {linearTiming} from '@remotion/transitions';
-import {fade} from '@remotion/transitions/fade';
-import {slide} from '@remotion/transitions/slide';
-import {wipe} from '@remotion/transitions/wipe';
-```
-
-### Remotion 核心 API
-
-```typescript
-import {AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring, Img, Video, Audio, Sequence} from 'remotion';
-```
+---
 
 ## AI 工作流程
 
-### 1. 读笔记
+### 1. 读笔记（★ 优先用 probeDocument）
 
-使用 `siyuan-notes` skill 获取文档内容：
+```typescript
+/** ★ 第一步永远用 probeDocument，一次调用获取全部信息 */
+import {probeDocument} from './siyuan/probe';
+
+const probe = await probeDocument(docId);
+probe.fullText    // 全文文本（可直接阅读）
+probe.blocks      // 块树（含 assets/layout/config 完整信息）
+probe.images[]    // 所有图片 {src, url, blockId}
+probe.audios[]    // 所有音频 {src, url, blockId}
+probe.videos[]    // 所有视频 {src, url, blockId}
+```
+
+如果需要更细粒度的控制，再使用 siyuan-notes skill：
 - `getBlockByID(docId)` 获取文档信息
 - SQL 查询获取块结构
-- 或使用 `siyuanClient.getDocBlocks(docId)` 获取所有块
-- 用 `extractAssetsFromBlock(blockId)` 查看块中有哪些资源文件
+- `extractAssetsFromBlock(blockId)` 查看块中有哪些资源文件
 
 ### 2. 读图片（关键步骤！）
 
 **必须读取笔记中的图片，才能做出合理的视觉方案。** 文字只告诉你"是什么"，图片告诉你"怎么呈现"。
 
-对每个图片资源：
-1. `getLocalAssetPath(blockId, assetPath)` 获取本地路径
-2. 用 `Read` 工具读取图片（支持 PNG/JPG），直接看到图片内容
-3. 分析图片特征：
-   - **内容类型**：截图？照片？插画？UI 界面？
-   - **主体位置**：居中？偏左？偏右？
-   - **色彩基调**：亮色？暗色？主色调？
-   - **信息密度**：简洁？细节丰富？
-   - **宽高比**：横图？竖图？方图？
+通过代理下载图片后用 Read 工具查看：
+```bash
+# 通过代理下载（必须走代理，直连思源会超时）
+curl -s -o /tmp/img1.webp "http://localhost:6899/assets/image-xxx.webp"
+# 然后用 Read 工具读取图片文件
+```
 
-这些特征直接决定：
-- 用 KenBurnsImage（照片/风景）还是直接展示（截图/UI）
-- SplitLayout 的 ratio（主体在左 → 左大右小）
-- 叠加文字的颜色和位置（暗图 → 白字叠加底部）
-- 停留时长（信息密度高 → 停更久）
+分析图片特征，决定呈现方式：
+- **聊天截图** → 用聊天气泡流重新演绎（不要直接贴截图）
+- **代码/UI 截图** → 居中展示 + 圆角阴影 + slide-in
+- **照片/风景** → KenBurnsImage 缓慢缩放
+- **信息图/数据** → 提取数据用动画重新展示
 
-### 3. 设计视觉方案
+### 3. 处理语音旁白（如果笔记有录音）
 
-根据笔记文字内容 **+ 图片分析结果**，设计视频方案：
-- 文章的整体节奏和风格
-- 每个段落用什么视觉效果（布局、动画、特效）
-- 段落之间的过渡效果
-- 使用 light 还是 dark 主题
-- 图片如何呈现（全屏/分屏/叠加文字）
+```
+Step 1: analyzeAudio() → 转写 + 静音检测
+Step 2: AI 审阅转写文本，判断口癖/废话，返回 CutRange[]
+Step 3: applyCuts() → 裁剪生成 clean.wav
 
-### 4. 写代码
+★ Step 4: 对裁剪后的音频重新 analyzeAudio()
+  不能用原始转写结果做"数学减法"估算时间——裁剪边界不对齐句子边界，会导致字幕重叠错位
+
+Step 5: AI 将中文句子翻译为英文（双语字幕）
+  subtitles 数据结构: {text: 中文, en: 英文, start, end}
+
+Step 6: cleanDuration → 驱动视频总帧数；subtitles → 驱动双语字幕显示
+```
+
+### 4. 设计视觉方案
+
+根据笔记内容 + 图片分析 + 语音时间轴，设计视频方案：
+- 参照**视觉设计风格指南**选择配色和布局
+- 每个段落选择合适的布局模式（标题卡/分屏/气泡流/数据面板）
+- 规划动画时序（stagger 入场、数字计数、场景过渡）
+
+### 5. 写代码
 
 将视频组件写入 `src/generated/video-<名称>.tsx`，参考以下模板：
 
 ```tsx
-import {AbsoluteFill, Audio, useCurrentFrame, useVideoConfig, interpolate, spring} from 'remotion';
+import {AbsoluteFill, Audio, useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, staticFile, Img} from 'remotion';
 import {TransitionSeries, linearTiming} from '@remotion/transitions';
 import {fade} from '@remotion/transitions/fade';
 import {slide} from '@remotion/transitions/slide';
@@ -201,10 +255,47 @@ import {GradientBackground} from '../templates/GradientBackground';
 import {TextReveal} from '../templates/TextReveal';
 
 /** 思源资源 URL 辅助 */
-const asset = (path: string) => siyuanClient.assetUrl(path);
+const asset = (p: string) => siyuanClient.assetUrl(p);
 
-/** 总时长 = 各段秒数之和 × 24 - (过渡数 × 过渡帧数) */
-export const VIDEO_DURATION = 29 * 24 - 45;
+/** 通过 staticFile 访问 data 目录中的缓存音频 */
+const dataAudio = (name: string) => staticFile(`data/<docId>/<name>`);
+
+const FPS = 24;
+
+/** 双语字幕数据: ASR 转写 → AI 翻译英文 */
+const SUBS = [
+  {text: '中文句子', en: 'English translation', start: 0, end: 0},
+  // ...
+];
+
+/** 总帧数 = 各段之和 - 过渡重叠帧 */
+export const VIDEO_DURATION = (S1_SEC + S2_SEC + S3_SEC) * FPS - TRANSITION_FRAMES * 2;
+
+/**
+ * ★ 音频轨道定义 — 每段音频用 Sequence 放在 TransitionSeries 外面
+ * 支持多段录音，每段指定全局时间区间 {src, startFrame, durationFrames}
+ */
+const AUDIO_TRACKS = [
+  {src: narration, startFrame: 0, durationFrames: VIDEO_DURATION, volume: 0.9},
+];
+
+/**
+ * ★ 字幕组件 — 必须放在 TransitionSeries 外面，且 zIndex: 999
+ * 原因：TransitionSeries 内的场景用 AbsoluteFill 覆盖全屏，
+ *        不加 zIndex 会被场景层压住导致字幕不可见
+ */
+const Subtitle: React.FC<{sentences: Array<{text: string; en: string; start: number; end: number}>}> = ({sentences}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const ms = (frame / fps) * 1000;
+  const active = sentences.find((s) => ms >= s.start && ms <= s.end + 200);
+  if (!active) return null;
+  return (
+    <div style={{position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)', zIndex: 999, pointerEvents: 'none'}}>
+      {/* 半透明气泡：中文 + 分隔线 + 英文 */}
+    </div>
+  );
+};
 
 export const VideoName: React.FC = () => {
   loadNotoSansSC();
@@ -212,14 +303,27 @@ export const VideoName: React.FC = () => {
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <AbsoluteFill>
+      <AbsoluteFill style={{backgroundColor: '#0a0a0a'}}>
+        {/* ★ 音频 — 放在 TransitionSeries 外面，用 Sequence 指定全局时间区间 */}
+        {AUDIO_TRACKS.map((track, i) => (
+          <Sequence key={i} from={track.startFrame} durationInFrames={track.durationFrames}>
+            <Audio src={track.src} volume={track.volume} />
+          </Sequence>
+        ))}
+
+        {/* ★ 字幕 — 放在 TransitionSeries 外面，zIndex: 999 确保在最上层 */}
+        <Subtitle sentences={SUBS} />
+
+        {/* 视觉场景（纯视觉，不含 Audio 和 Subtitle） */}
         <TransitionSeries>
-          {/* 每段用 TransitionSeries.Sequence 包裹 */}
-          <TransitionSeries.Sequence durationInFrames={fps * 5}>
-            {/* 段内容 */}
+          <TransitionSeries.Sequence durationInFrames={fps * S1_SEC}>
+            <AbsoluteFill>
+              {/* 背景 */}
+              <AbsoluteFill style={{background: 'linear-gradient(135deg, #09203f 0%, #537895 100%)'}} />
+              {/* 纯视觉内容 */}
+            </AbsoluteFill>
           </TransitionSeries.Sequence>
 
-          {/* 段间过渡 */}
           <TransitionSeries.Transition
             timing={linearTiming({durationInFrames: 15})}
             presentation={fade()}
@@ -249,7 +353,7 @@ import {VideoName, VIDEO_DURATION} from './generated/video-name';
 />
 ```
 
-### 5. 验证和渲染
+### 6. 验证和渲染
 
 ```bash
 # 1. 类型检查（必须先通过）
@@ -264,24 +368,92 @@ npx remotion render <CompositionId> out/<名称>.mp4 --codec=h264
 
 如需在 Remotion Studio 中实时预览：`pnpm start`
 
-### ⚠️ 重要注意事项
+---
 
-- **必须读图片**：生成视频前必须先读取笔记中的每张图片，根据图片内容决定呈现方式（截图适合直接展示，照片适合 Ken Burns 等）
-- **图片资源必须走代理**：通过 `http://localhost:6899/assets/xxx` 下载，`extractAssetsFromBlock` 只对子块有效不对文档块
-- **markdown 字段可能为 null**：SQL 查询结果中某些块的 markdown 可能为 null，要用 `b.markdown || ''` 防护
-- **字体加载**：使用 `loadNotoSansSC()` 只需在顶层组件调用一次，已优化为仅加载 400/700 字重 + 中文字集
-- **音频文件**：使用 `<Audio src={asset('assets/xxx.m4a')} />`，资源路径来自思源笔记
-- **视频嵌入**：使用原生 `<video>` 标签而非 Remotion `<Video>`（避免编解码问题），设置 `muted autoPlay`
-- **动画时序**：`interpolate(frame - delay, [0, duration], [from, to], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})` 是标准模式
-- **过渡帧数**：每 15 帧过渡会重叠前后段落，总帧数 = 各段之和 - 过渡帧
-- **主题颜色**：用 `useTheme()` 获取 fontFamily/colors，不要硬编码；直接写内联样式的场景可以用 darkTheme 的 fontFamily
+## AI 可用组件工具箱
+
+### 思源数据层
+
+```typescript
+/** ★ 优先使用 — 一次调用获取全部信息 */
+import {probeDocument} from './siyuan/probe';
+
+/** 底层工具（probe 不够用时再用） */
+import {siyuanClient} from './siyuan/client';
+// siyuanClient.queryBlocks(sql)          — SQL 查询 blocks 表
+// siyuanClient.getDocBlocks(docId)       — 获取文档所有块
+// siyuanClient.assetUrl(path)            — 资源文件完整 URL
+
+import {parseKramdownBlock, stripInlineMarkdown, parseHeading, extractAssets} from './siyuan/kramdown-parser';
+import {SiYuanBlockType} from './siyuan/block-types';
+```
+
+### 语音旁白管道（两步式：AI 参与清洗决策）
+
+```typescript
+import {analyzeAudio, applyCuts} from './asr';
+import type {AudioAnalysis, CutRange} from './asr';
+
+// Step 1: 转写 + 静音检测
+const analysis = await analyzeAudio('/path/to/audio.m4a');
+analysis.transcription.sentences     // 逐句：[{start, end, text, punc, tsList}, ...]
+analysis.transcription.timestamps    // 字级别时间戳
+analysis.silences                    // 静音段
+analysis.duration                    // 总时长（秒）
+
+// Step 2: AI 审阅 → 返回 CutRange[]
+
+// Step 3: 执行裁剪
+const result = await applyCuts('/path/to/audio.m4a', cutRanges, '/tmp/clean.wav');
+```
+
+### 块渲染组件
+
+```typescript
+import {BlockRenderer} from './blocks/BlockRenderer';
+// 根据 block.type 自动选择对应组件渲染
+```
+
+### 主题系统
+
+```typescript
+import {useTheme} from './theme/context';
+import {ThemeProvider} from './theme/context';
+import {loadNotoSansSC} from './theme/fonts';
+import {lightTheme, darkTheme} from './theme/presets';
+```
+
+### 动画预设
+
+```typescript
+import {useAnimationStyle} from './animations/presets';
+// 可选: 'fadeIn' | 'slideInLeft' | 'slideInRight' | 'slideInUp' | 'scaleIn' | 'none'
+```
+
+### 过渡效果
+
+```typescript
+import {TransitionSeries} from '@remotion/transitions';
+import {linearTiming} from '@remotion/transitions';
+import {fade} from '@remotion/transitions/fade';
+import {slide} from '@remotion/transitions/slide';
+import {wipe} from '@remotion/transitions/wipe';
+```
+
+### Remotion 核心 API
+
+```typescript
+import {AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring, Img, Video, Audio, Sequence} from 'remotion';
+```
+
+---
 
 ## 可复用模板目录
 
 <!-- TEMPLATE_CATALOG_START -->
 
 ### KenBurnsImage (`src/templates/KenBurnsImage.tsx`)
-全屏图片 + Ken Burns 缓慢缩放动画。经典视频特效。
+全屏图片 + Ken Burns 缓慢缩放动画。适合照片/风景。
 ```tsx
 <KenBurnsImage src={imageUrl} direction="zoom-in" />
 ```
@@ -322,8 +494,10 @@ Props: `title`(必填), `subtitle`, `backgroundColors`, `color`, `fontSize`
 **创建新模板的流程**：
 1. 在 `src/templates/` 下创建 `.tsx` 文件
 2. 组件遵循 Remotion 规范，支持 props 参数化
-3. 在本文件的"可复用模板目录"中添加描述
+3. 在本文件的 `<!-- TEMPLATE_CATALOG_START -->` 和 `<!-- TEMPLATE_CATALOG_END -->` 之间添加描述
 4. 下次 AI 生成视频时可以直接 import 复用
+
+---
 
 ## 代码约定
 
@@ -335,10 +509,48 @@ Props: `title`(必填), `subtitle`, `backgroundColors`, `color`, `fontSize`
 - 开发阶段 **let it crash**，不用 try-catch 包裹
 - 迭代优于下标：用 `for of` 不用 `for i++`
 
-## 持续改进
+---
 
-- **每次执行任务时遇到的坑，必须同步更新到本文件**：包括新的注意事项、修正的错误流程、新发现的最佳实践。确保下次不再犯同样的错误。
-- **新增模板组件后，必须在本文件的"可复用模板目录"中添加描述**，否则等于不存在。
+## ⚠️ 重要注意事项
+
+- **优先用 probeDocument()**：一次调用获取全文+图片+音频+视频，不要手动一个个查
+- **必须读图片**：生成视频前必须先读取笔记中的每张图片，根据内容决定呈现方式
+- **聊天截图不要直接贴**：用聊天气泡流重新演绎对话内容
+- **图片资源必须走代理**：`http://localhost:6899/assets/xxx`，直连会超时
+- **extractAssetsFromBlock 只对子块有效**：不对文档块（doc 类型）本身
+- **markdown 字段可能为 null**：用 `b.markdown || ''` 防护
+- **字体加载**：`loadNotoSansSC()` 只需在顶层组件调用一次
+- **音频文件**：`<Audio src={asset('assets/xxx.m4a')} />` 或 `staticFile('data/...')` 访问缓存
+- **视频嵌入**：用原生 `<video>` 标签而非 Remotion `<Video>`，设置 `muted autoPlay`
+- **动画时序**：`interpolate(frame - delay, [0, duration], [from, to], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})`
+- **过渡帧数**：15 帧过渡会重叠前后段落，总帧数 = 各段之和 - 过渡帧
+- **场景间过渡**：12 帧 fade（不要用太长的过渡）
+- **★ 音频必须放在 TransitionSeries 外面**：用 `<Sequence from={startFrame} durationInFrames={duration}>` 指定全局时间区间，支持多段录音。不要放在场景组件内部（会重复播放）
+- **★ 字幕必须放在 TransitionSeries 外面**：基于全局帧数计算显示。必须加 `zIndex: 999`，否则会被 TransitionSeries 内的 AbsoluteFill 场景层压住导致不可见
+- **★ 场景组件必须纯视觉**：不含 `<Audio>` 和 `<Subtitle>`，音频和字幕都在 TransitionSeries 外层统一管理
+
+---
+
+## 🎙️ 语音旁白功能
+
+### ASR 方案：FunASR（阿里达摩院）
+
+Docker 部署的离线中文语音识别服务：
+- 部署：`cd docker/funasr && docker compose up -d`
+- 配置：`.env` 中 `funasr_ws_url=ws://localhost:10095`
+- 热词：`docker/funasr/hotwords.txt`
+
+### 语音驱动视频节奏
+
+1. 下载思源录音通过代理 → `analyzeAudio()` 转写 → AI 审阅清洗 → `applyCuts()` 裁剪
+2. `cleanDuration` 驱动视频总帧数，`sentences` 驱动字幕
+3. Remotion `<Audio>` 播放清洗后的语音
+
+### 关键依赖
+- ASR：FunASR Docker 容器（Paraformer-large 模型）
+- 音频处理：FFmpeg（`~/tools/ffmpeg/bin/ffmpeg`）
+
+---
 
 ## 开发命令
 
@@ -353,3 +565,10 @@ pnpm test           # ESLint + tsc 类型检查
 
 - 代理服务器（`pnpm proxy`）必须先启动，Remotion 才能访问思源 API
 - `.env` 文件配置：`siyuan_token`、`siyuan_base`、`proxy_base`、`proxy_port`
+
+---
+
+## 持续改进
+
+- **每次遇到的坑，必须同步更新到本文件**
+- **新增模板组件后，必须在 TEMPLATE_CATALOG 区域添加描述**

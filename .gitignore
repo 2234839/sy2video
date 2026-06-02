@@ -7,3 +7,8 @@ pnpm-lock.yaml
 
 # Ignore the output video from Git but not videos you import into src/.
 out
+
+# 探测结果缓存
+data/
+# 软链接上面的 data 目录
+public/data
